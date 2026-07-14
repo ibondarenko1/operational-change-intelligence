@@ -29,6 +29,9 @@ This MVP is intentionally deterministic and scoped.
 - Checklist items are generated from triggered rules and are not workflow tasks yet.
 - Rollback validation is inferred from text, not verified against attached evidence.
 - The impact analysis explains plausible operational failure paths; it does not prove that a failure will occur.
+- Change-to-asset linkage is currently populated only when a change exactly matches a curated demo scenario (title, environment, and change type). A user-entered change that does not match a demo scenario has no linked assets yet, so its impact analysis is empty. A UI and API to attach specific assets to any change is future work; the graph traversal itself is already asset-driven, not keyword-driven.
+- Business service is represented in two ways: an `Asset.business_service` string and a first-class `business_service` asset reached through a `supports` dependency. The engine merges both, but the string field duplicates the graph and should converge on the graph representation as the model matures.
+- Assessment collections (directly affected assets, dependent assets, impact paths, predicted failure modes, similar changes, blast radius, missing context) are stored as JSON columns on `risk_assessments`. This is adequate for the MVP but will make querying, cross-assessment analytics, versioning, and change auditing harder later; these should move to relational tables before that need arrives.
 
 ## Intended Next Steps
 

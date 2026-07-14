@@ -215,6 +215,30 @@ def test_category_caps_keep_identity_scope_from_double_counting():
     )
 
 
+def test_negative_category_floors_at_zero_and_does_not_cancel_unrelated_risk():
+    # Good rollout hygiene (pilot + report-only) drives deployment_strategy net-negative.
+    # That reduction must stay inside its own category and must not cancel the unrelated
+    # identity-scope risk of scoping break-glass and admin accounts into enforcement.
+    result = RiskEngine().analyze(
+        make_change(
+            title="Global admin and break-glass MFA rollout for all users",
+            description="Policy affects privileged administrator and emergency access accounts.",
+            affected_scope="All users, Global administrators, break-glass emergency access accounts.",
+            pilot_enabled=True,
+            report_only_mode=True,
+        )
+    )
+
+    deployment = result.category_scores["deployment_strategy"]
+    assert deployment["raw"] == -25  # pilot_enabled -15 + report_only_mode -10
+    assert deployment["capped"] == 0  # floored, never leaks a negative into the total
+
+    identity_scope = result.category_scores["identity_scope"]
+    assert identity_scope["capped"] == 30
+    assert result.score >= identity_scope["capped"]
+    assert result.level != "low"
+
+
 def test_demo_asset_context_detects_mvp_scenario_risks():
     change = make_change(
         title="Enable MFA for all contractors",

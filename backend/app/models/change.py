@@ -114,7 +114,7 @@ class RiskAssessment(Base):
     @property
     def formula(self) -> str:
         return (
-            "score = min(100, max(0, sum(min(sum(points by category), category_cap))))"
+            "score = min(100, sum(min(category_cap, max(0, sum(points by category)))))"
         )
 
 

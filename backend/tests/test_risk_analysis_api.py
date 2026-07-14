@@ -85,7 +85,7 @@ def test_analyze_change_creates_and_replaces_assessment(client, monkeypatch):
     assert first_payload["score"] == 100
     assert first_payload["level"] == "critical"
     assert first_payload["recommendation"] == "delay_and_investigate"
-    assert first_payload["formula"] == "score = min(100, max(0, sum(min(sum(points by category), category_cap))))"
+    assert first_payload["formula"] == "score = min(100, sum(min(category_cap, max(0, sum(points by category)))))"
     assert first_payload["raw_score"] >= first_payload["score"]
     assert first_payload["capped_score"] >= first_payload["score"]
     assert first_payload["category_scores"]["identity_scope"]["cap"] == 30

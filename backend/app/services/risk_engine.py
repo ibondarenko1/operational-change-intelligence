@@ -11,7 +11,7 @@ from app.services.similarity import SimilarHistoricalChange, SimilarityService
 
 
 DEFAULT_RULES_PATH = Path(__file__).resolve().parents[1] / "rules" / "change_risk_rules.yaml"
-FORMULA = "score = min(100, max(0, sum(min(sum(points by category), category_cap))))"
+FORMULA = "score = min(100, sum(min(category_cap, max(0, sum(points by category)))))"
 
 
 @dataclass(frozen=True)
@@ -110,7 +110,7 @@ class RiskEngine:
         raw_score = sum(factor.points for factor in factors)
         category_scores = self._category_scores(factors)
         capped_score = sum(category["capped"] for category in category_scores.values())
-        score = min(100, max(0, capped_score))
+        score = min(100, capped_score)
         level = self._level_for_score(score)
 
         return RiskAssessmentResult(
@@ -298,7 +298,11 @@ class RiskEngine:
             category["cap"] = factor.category_cap
 
         for category in scores.values():
-            category["capped"] = min(category["raw"], category["cap"])
+            # Floor each category at 0 before applying its cap so a well-controlled
+            # category (net-negative from reductions like pilot_enabled) cannot cancel
+            # out unrelated risk categories. Reductions still net within their own
+            # category; they just do not leak across categories.
+            category["capped"] = min(category["cap"], max(0, category["raw"]))
         return scores
 
     def _formula_explanation(self, category_scores: dict[str, dict[str, int]]) -> str:
