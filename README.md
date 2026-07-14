@@ -1,6 +1,6 @@
 # Operational Change Intelligence
 
-Operational Change Intelligence is an MVP for analyzing planned changes in a Microsoft security environment before implementation. It estimates operational risk, explains why risk was assigned, finds similar historical failures, and produces a pre-implementation checklist.
+Operational Change Intelligence is an explainable impact analysis MVP for planned changes in a Microsoft security environment. It identifies concrete affected assets, dependency paths, likely failure modes, related business services, similar historical evidence, and risk-reducing actions before implementation.
 
 The MVP is deterministic: no LLMs, no embeddings, and no opaque scoring.
 
@@ -21,12 +21,12 @@ This creates avoidable lockouts, downtime, incident escalations, and emergency r
 
 The MVP helps reviewers answer:
 
-- What is the risk level of this planned change?
-- Which factors made it risky?
-- What evidence triggered each factor?
-- What similar changes failed before?
-- What lessons learned should be reviewed?
-- What checklist items should be completed before implementation?
+- Which concrete objects will this change affect?
+- Which dependencies and business services may break?
+- Why can the failure happen?
+- Which historical changes support the risk?
+- Which controls reduce the risk before implementation?
+- What is the explainable risk score and category breakdown?
 
 ## Architecture
 
@@ -39,10 +39,12 @@ Runtime services:
 Backend intelligence modules:
 
 - YAML rule engine: `backend/app/rules/change_risk_rules.yaml`
+- Failure mode rules: `backend/app/rules/failure_mode_rules.yaml`
+- Impact analysis service: `backend/app/services/impact_analysis.py`
 - Risk service: `backend/app/services/risk_engine.py`
 - Similarity service: `backend/app/services/similarity.py`
 - Human Error Intelligence analytics: `backend/app/services/analytics.py`
-- Demo asset context: `backend/app/services/demo_assets.py`
+- Demo asset graph seed: `backend/app/services/demo_assets.py`
 
 More detail:
 
@@ -125,6 +127,11 @@ Enable MFA for all contractors
    - risk level;
    - recommendation;
    - risk factors and points;
+   - category score caps;
+   - blast radius;
+   - affected assets;
+   - dependency paths;
+   - predicted failure modes;
    - evidence for each factor;
    - checklist items;
    - similar historical changes;
@@ -139,6 +146,15 @@ Expected demo result:
 - at least six checklist items;
 - at least three similar historical changes;
 - at least two similar failed changes.
+- direct affected assets: contractor accounts, three service accounts, two break-glass accounts;
+- affected business services: Contractor Onboarding, Vendor Billing, Badge Provisioning, Remote Contractor Access.
+
+## How This Differs From SIEM, GRC, And ITSM
+
+- SIEM tools detect and investigate events after or during execution. This MVP analyzes planned operational impact before execution.
+- GRC tools track policies, controls, approvals, and compliance evidence. This MVP explains technical dependencies and likely operational failures behind one change.
+- ITSM tools manage workflow, approvals, and tickets. This MVP can enrich a ticket with impact paths, historical evidence, failure modes, and checklist actions.
+- This is not a production simulator. It is an explainable deterministic analysis layer that could later ingest data from SIEM, GRC, ITSM, CMDB, or Microsoft Graph.
 
 ## API Examples
 
@@ -196,6 +212,7 @@ Backend:
 ```bash
 cd backend
 python -m pytest
+ruff check .
 ```
 
 Frontend:
@@ -203,6 +220,7 @@ Frontend:
 ```bash
 cd frontend
 npm run typecheck
+npm run lint
 npm run build
 npm audit --audit-level=moderate
 ```
@@ -219,7 +237,7 @@ docker compose config
 - No real Microsoft Graph integration.
 - No live Entra ID, Intune, Defender, or Azure ingestion.
 - No embeddings or semantic search.
-- Demo assets are JSON context, not first-class database entities.
+- Demo assets are first-class database entities, but still synthetic.
 - Risk scoring is deterministic and should be calibrated before production use.
 
 See [Limitations](docs/LIMITATIONS.md).

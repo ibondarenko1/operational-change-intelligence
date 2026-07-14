@@ -22,38 +22,72 @@ Maintenance window: `false`
 
 ## Related Demo Assets
 
-The scenario is enriched by `demo-data/demo_assets.json`.
+The scenario is enriched by first-class `Asset`, `AssetDependency`, and `ChangeAsset` records loaded from `demo-data/demo_assets.json`.
 
-| Asset group | Count | Why it matters |
-| --- | ---: | --- |
-| Contractor accounts | 127 | Broad identity population with external users. |
-| Legacy applications | 4 | Legacy auth dependencies can break during MFA enforcement. |
-| Service accounts | 3 | Automation identities may fail interactive MFA requirements. |
-| Break-glass accounts | 2 | Emergency access must be excluded and validated. |
-| Legacy VPN integration | 1 | VPN/RADIUS behavior can depend on legacy auth flows. |
+Directly affected:
+
+- Contractor Accounts
+- svc-contractor-sync
+- svc-vendor-billing
+- svc-badge-provisioning
+- breakglass-cloud-01
+- breakglass-cloud-02
+
+Dependent:
+
+- Vendor Billing EWS Export
+- Facilities Badge Provisioning
+- Warehouse TimeClock Legacy Portal
+- Contractor Document Intake
+- Legacy Contractor VPN
+- RADIUS authentication
+- Conditional Access Exclusion
+
+Affected business services:
+
+- Contractor Onboarding
+- Vendor Billing
+- Badge Provisioning
+- Remote Contractor Access
 
 ## Expected Detection
 
-The risk engine should trigger at least these factors:
+The system should detect:
 
-- `broad_scope`
-- `legacy_applications_present`
-- `service_accounts_affected`
-- `break_glass_accounts_affected`
-- `outside_maintenance_window`
-- `pilot_missing`
-- `report_only_missing`
-- `weak_rollback_validation`
-- `similar_failures_found`
+- broad deployment scope;
+- legacy application dependency;
+- service account risk;
+- break-glass account risk;
+- missing pilot;
+- missing report-only phase;
+- weak rollback validation;
+- similar previous failures.
 
 Expected result:
 
-- Risk level: `high` or `critical`
-- Recommendation: `pilot_first` or `delay_and_investigate`
+- Risk level: `critical`
+- Recommendation: `delay_and_investigate`
 - At least five risk factors
 - At least six checklist items
 - At least three similar historical changes
 - At least two similar failed historical changes
+- At least four impact paths
+
+Example impact path:
+
+```text
+mfa rollout
+-> svc-vendor-billing
+-> Vendor Billing EWS Export
+-> Vendor Billing
+```
+
+Example predicted failure modes:
+
+- Service account may fail authentication and stop automation.
+- Contractor remote access may be disrupted.
+- Legacy application authentication may fail.
+- Emergency access may be blocked.
 
 ## Demo Flow
 
@@ -63,7 +97,7 @@ Expected result:
 4. Create the change.
 5. Open the created change detail page.
 6. Select `Run analysis`.
-7. Review risk score, factors, evidence, checklist, similar changes, incidents, and lessons learned.
+7. Review impact summary, affected assets, dependency paths, predicted failure modes, historical evidence, risk breakdown, missing context, and checklist.
 
 ## API Flow
 
@@ -87,5 +121,6 @@ curl -X POST http://localhost:8000/api/v1/changes \
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/changes/{id}/analyze
+curl http://localhost:8000/api/v1/changes/{id}/assessment
 curl "http://localhost:8000/api/v1/changes/{id}/similar?limit=5"
 ```

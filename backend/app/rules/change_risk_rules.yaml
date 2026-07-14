@@ -3,6 +3,8 @@ rules:
     title: Privileged accounts affected
     description: The change mentions privileged or administrative identities.
     points: 25
+    category: identity_scope
+    category_cap: 30
     conditions:
       type: keyword_any
       fields: ["title", "description", "affected_scope", "asset_context"]
@@ -33,6 +35,8 @@ rules:
     title: Service accounts affected
     description: The change may affect service accounts, automation identities, or workload integrations.
     points: 20
+    category: dependency
+    category_cap: 30
     conditions:
       type: keyword_any
       fields: ["title", "description", "affected_scope", "asset_context"]
@@ -58,6 +62,8 @@ rules:
     title: Break-glass accounts affected
     description: Emergency access or break-glass accounts appear to be in or near the deployment scope.
     points: 25
+    category: identity_scope
+    category_cap: 30
     conditions:
       type: keyword_any
       fields: ["title", "description", "affected_scope", "asset_context"]
@@ -80,12 +86,14 @@ rules:
 
   - code: rollback_plan_missing
     title: Rollback plan missing
-    description: The rollback plan is missing, too short, or explicitly marked as unavailable.
+    description: The rollback plan is missing or explicitly marked as unavailable.
     points: 20
+    category: rollback
+    category_cap: 20
     conditions:
       type: rollback_missing
       field: rollback_plan
-      minimum_length: 30
+      minimum_length: 1
       empty_markers: ["none", "n/a", "na", "tbd", "not defined", "no rollback"]
     evidence_template: "Rollback plan is missing or not actionable: {rollback_plan_summary}."
     checklist_items:
@@ -99,6 +107,8 @@ rules:
     title: Broad scope
     description: The change appears to target a broad population such as all users, all devices, or the whole tenant.
     points: 15
+    category: identity_scope
+    category_cap: 30
     conditions:
       type: keyword_any
       fields: ["title", "description", "affected_scope", "asset_context"]
@@ -127,6 +137,8 @@ rules:
     title: Legacy applications present
     description: The change mentions legacy applications or legacy authentication dependencies.
     points: 15
+    category: dependency
+    category_cap: 30
     conditions:
       type: keyword_any
       fields: ["title", "description", "affected_scope", "asset_context"]
@@ -157,6 +169,8 @@ rules:
     title: Outside maintenance window
     description: The change is not marked for execution inside a maintenance window.
     points: 10
+    category: timing
+    category_cap: 10
     conditions:
       type: bool_equals
       field: maintenance_window
@@ -173,6 +187,8 @@ rules:
     title: Pilot missing
     description: The change is not staged through a pilot before enforcement.
     points: 15
+    category: deployment_strategy
+    category_cap: 25
     conditions:
       type: bool_equals
       field: pilot_enabled
@@ -194,6 +210,8 @@ rules:
     title: Report-only phase missing
     description: The change moves directly to enforcement without a report-only observation phase.
     points: 10
+    category: deployment_strategy
+    category_cap: 25
     conditions:
       type: bool_equals
       field: report_only_mode
@@ -210,6 +228,8 @@ rules:
     title: Weak rollback validation
     description: The rollback plan does not describe validation steps or tested recovery criteria.
     points: 15
+    category: rollback
+    category_cap: 20
     conditions:
       type: rollback_weak_validation
       field: rollback_plan
@@ -234,6 +254,8 @@ rules:
     title: Similar historical failures found
     description: Deterministically similar historical changes have failed or caused incidents.
     points: 20
+    category: historical_evidence
+    category_cap: 20
     conditions:
       type: similar_failures
       minimum_similarity: 0.35
@@ -251,6 +273,8 @@ rules:
     title: Pilot enabled
     description: A pilot is enabled, reducing rollout risk.
     points: -15
+    category: deployment_strategy
+    category_cap: 25
     conditions:
       type: bool_equals
       field: pilot_enabled
@@ -267,6 +291,8 @@ rules:
     title: Report-only mode enabled
     description: Report-only mode is enabled, reducing enforcement risk.
     points: -10
+    category: deployment_strategy
+    category_cap: 25
     conditions:
       type: bool_equals
       field: report_only_mode
@@ -283,6 +309,8 @@ rules:
     title: Rollback tested
     description: The rollback plan appears to have been tested or validated.
     points: -10
+    category: rollback
+    category_cap: 20
     conditions:
       type: keyword_any
       fields: ["rollback_plan"]

@@ -85,7 +85,10 @@ def test_analyze_change_creates_and_replaces_assessment(client, monkeypatch):
     assert first_payload["score"] == 100
     assert first_payload["level"] == "critical"
     assert first_payload["recommendation"] == "delay_and_investigate"
-    assert first_payload["formula"] == "score = min(100, max(0, sum(risk_factors.points)))"
+    assert first_payload["formula"] == "score = min(100, max(0, sum(min(sum(points by category), category_cap))))"
+    assert first_payload["raw_score"] >= first_payload["score"]
+    assert first_payload["capped_score"] >= first_payload["score"]
+    assert first_payload["category_scores"]["identity_scope"]["cap"] == 30
 
     factor_codes = {factor["code"] for factor in first_payload["risk_factors"]}
     assert {
@@ -147,6 +150,20 @@ def test_mvp_demo_scenario_produces_expected_risk_result(client, monkeypatch):
     assert analysis["recommendation"] in {"pilot_first", "delay_and_investigate"}
     assert len(analysis["risk_factors"]) >= 5
     assert len(analysis["checklist_items"]) >= 6
+    assert analysis["blast_radius"]["users_count"] == 127
+    assert analysis["blast_radius"]["applications_count"] == 4
+    assert analysis["blast_radius"]["service_accounts_count"] == 3
+    assert len(analysis["impact_paths"]) >= 4
+    assert len(analysis["predicted_failure_modes"]) >= 4
+    assert {"Contractor Accounts", "svc-vendor-billing", "breakglass-cloud-02"}.issubset(
+        {asset["name"] for asset in analysis["directly_affected_assets"]}
+    )
+    assert {"Vendor Billing", "Badge Provisioning", "Remote Contractor Access"}.issubset(
+        {asset["name"] for asset in analysis["affected_business_services"]}
+    )
+    assert any("No tested rollback evidence" in item for item in analysis["missing_context"])
+    assert any(mode["code"] == "vpn_access_disruption" for mode in analysis["predicted_failure_modes"])
+    assert any(mode["code"] == "break_glass_lockout" for mode in analysis["predicted_failure_modes"])
     assert {
         "broad_scope",
         "legacy_applications_present",
@@ -165,6 +182,28 @@ def test_mvp_demo_scenario_produces_expected_risk_result(client, monkeypatch):
 
     assert len(similar) >= 3
     assert len(failed_similar) >= 2
+
+
+def test_full_demo_analysis_returns_expected_impact_paths_and_evidence(client, monkeypatch):
+    monkeypatch.setenv("DEMO_MODE", "true")
+    get_settings.cache_clear()
+
+    assert client.post("/api/v1/demo/seed").status_code == 200
+    create_response = client.post("/api/v1/changes", json=mfa_contractors_payload())
+    assert create_response.status_code == 201
+    change_id = create_response.json()["id"]
+
+    analysis_response = client.post(f"/api/v1/changes/{change_id}/analyze")
+    assert analysis_response.status_code == 200
+    analysis = analysis_response.json()
+
+    path_text = "\n".join(" -> ".join(path["path"]) for path in analysis["impact_paths"])
+    assert "svc-vendor-billing -> Vendor Billing EWS Export -> Vendor Billing" in path_text
+    assert "Legacy Contractor VPN -> Remote Contractor Access" in path_text
+    assert analysis["category_scores"]["identity_scope"]["raw"] > analysis["category_scores"]["identity_scope"]["capped"]
+    assert analysis["category_scores"]["identity_scope"]["capped"] == 30
+    assert analysis["similar_changes"]
+    assert analysis["similar_changes"][0]["similarity_score"] >= analysis["similar_changes"][1]["similarity_score"]
 
 
 def test_get_assessment_returns_404_before_analysis(client):

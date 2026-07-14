@@ -2,6 +2,12 @@ import os
 import subprocess
 import sys
 
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.db.session import get_engine
+from app.models.change import Asset, AssetDependency
+
 
 def test_demo_seed_endpoint_requires_demo_mode(client, monkeypatch):
     # Hermetic: assert the guard regardless of the ambient DEMO_MODE, which the
@@ -24,11 +30,28 @@ def test_demo_seed_endpoint_is_idempotent_and_filters_work(client, monkeypatch):
 
     first_seed = client.post("/api/v1/demo/seed")
     assert first_seed.status_code == 200
-    assert first_seed.json() == {"inserted": 40, "updated": 0, "total": 40}
+    first_payload = first_seed.json()
+    assert first_payload["inserted"] == 40
+    assert first_payload["updated"] == 0
+    assert first_payload["total"] == 40
+    assert first_payload["assets_inserted"] == 17
+    assert first_payload["assets_total"] == 17
+    assert first_payload["dependencies_inserted"] == 12
+    assert first_payload["dependencies_total"] == 12
 
     second_seed = client.post("/api/v1/demo/seed")
     assert second_seed.status_code == 200
-    assert second_seed.json() == {"inserted": 0, "updated": 40, "total": 40}
+    second_payload = second_seed.json()
+    assert second_payload["inserted"] == 0
+    assert second_payload["updated"] == 40
+    assert second_payload["assets_inserted"] == 0
+    assert second_payload["assets_updated"] == 17
+    assert second_payload["dependencies_inserted"] == 0
+    assert second_payload["dependencies_updated"] == 12
+
+    with Session(get_engine()) as db:
+        assert db.scalar(select(func.count()).select_from(Asset)) == 17
+        assert db.scalar(select(func.count()).select_from(AssetDependency)) == 12
 
     all_changes = client.get("/api/v1/historical-changes")
     assert all_changes.status_code == 200

@@ -48,6 +48,8 @@ export type RiskFactor = {
   code: string;
   title: string;
   description: string;
+  category: string;
+  category_cap: number;
   points: number;
   evidence: string | null;
 };
@@ -66,13 +68,25 @@ export type RiskAssessment = {
   id: string;
   change_request_id: string;
   score: number;
+  raw_score: number;
+  capped_score: number;
   level: "low" | "medium" | "high" | "critical";
   recommendation: string;
   confidence: number;
+  category_scores: Record<string, { raw: number; capped: number; cap: number }>;
+  formula_explanation: string;
   created_at: string;
   formula: string;
   risk_factors: RiskFactor[];
   checklist_items: ChecklistItem[];
+  similar_changes: SimilarHistoricalChange[];
+  directly_affected_assets: ImpactAsset[];
+  dependent_assets: ImpactAsset[];
+  affected_business_services: ImpactAsset[];
+  impact_paths: ImpactPath[];
+  predicted_failure_modes: FailureMode[];
+  blast_radius: BlastRadius;
+  missing_context: string[];
 };
 
 export type HistoricalChange = {
@@ -87,6 +101,11 @@ export type HistoricalChange = {
   rollback_required: boolean;
   root_cause: string | null;
   lessons_learned: string | null;
+  trigger: string | null;
+  technical_cause: string | null;
+  process_failure: string | null;
+  business_impact: string | null;
+  preventive_control: string | null;
   created_at: string;
 };
 
@@ -99,7 +118,54 @@ export type SimilarHistoricalChange = {
   incident_occurred: boolean;
   root_cause: string | null;
   downtime_minutes: number;
+  rollback_required: boolean;
   lessons_learned: string | null;
+  historical_failure_signal: boolean;
+  historical_severity: "low" | "medium" | "high" | "critical";
+};
+
+export type ImpactAsset = {
+  id?: string;
+  name: string;
+  asset_type: string;
+  environment?: string;
+  description?: string;
+  business_service?: string | null;
+  owner?: string | null;
+  criticality: string;
+  authentication_method?: string | null;
+  is_legacy?: boolean;
+  is_privileged?: boolean;
+  asset_metadata?: Record<string, unknown>;
+  relationship_type?: string;
+  evidence?: string;
+};
+
+export type ImpactPath = {
+  change: string;
+  path: string[];
+  dependency_types: string[];
+  business_service: string;
+  evidence: string;
+};
+
+export type FailureMode = {
+  code: string;
+  failure_mode: string;
+  affected_asset: string;
+  asset_type: string;
+  business_service: string | null;
+  business_impact: string;
+  evidence: string;
+  recommended_actions: string[];
+};
+
+export type BlastRadius = {
+  users_count?: number;
+  applications_count?: number;
+  service_accounts_count?: number;
+  business_services_count?: number;
+  critical_assets_count?: number;
 };
 
 export type AnalyticsSummary = {
@@ -111,6 +177,9 @@ export type AnalyticsSummary = {
   average_downtime_minutes: number;
   most_common_root_cause: string | null;
   highest_risk_change_type: ChangeType | null;
+  common_process_failures: string[];
+  common_preventive_controls: string[];
+  common_business_impacts: string[];
 };
 
 export type RootCauseAnalytics = {
@@ -143,6 +212,10 @@ export type FailurePattern = {
   affected_change_types: ChangeType[];
   root_causes: string[];
   evidence: string[];
+  process_failure: string | null;
+  technical_cause: string | null;
+  business_impact: string | null;
+  preventive_control: string | null;
 };
 
 export type HistoricalFilters = {

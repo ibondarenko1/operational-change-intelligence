@@ -1,0 +1,100 @@
+rules:
+  - code: legacy_auth_block_breaks_legacy_app
+    change_types:
+      - legacy_authentication_block
+      - mfa_rollout
+    asset_conditions:
+      asset_type_any:
+        - application
+      is_legacy: true
+      authentication_method_any:
+        - basic_auth
+        - EWS
+        - SMTP_AUTH
+        - RADIUS
+        - legacy_client
+    dependency_conditions: {}
+    failure_mode: Legacy application authentication may fail.
+    business_impact: Legacy application users or jobs may lose access after enforcement.
+    recommended_actions:
+      - Identify application owner and confirm supported authentication method.
+      - Move the workload to modern authentication or create a time-boxed exception.
+      - Validate sign-in telemetry in report-only mode before enforcement.
+
+  - code: service_account_mfa_failure
+    change_types:
+      - mfa_rollout
+      - conditional_access
+    asset_conditions:
+      asset_type: service_account
+      authentication_method_any:
+        - password
+        - interactive
+    dependency_conditions: {}
+    failure_mode: Service account may fail authentication and stop automation.
+    business_impact: Automation that depends on the service account may stop until an exception or workload identity migration is completed.
+    recommended_actions:
+      - Inventory automation jobs using the account.
+      - Exclude the account only if approved and time-boxed.
+      - Replace password-based automation with workload identity where possible.
+
+  - code: break_glass_lockout
+    change_types:
+      - conditional_access
+      - mfa_rollout
+    asset_conditions:
+      asset_type: break_glass_account
+      requires_exclusion: true
+    dependency_conditions: {}
+    failure_mode: Emergency access may be blocked.
+    business_impact: Tenant recovery or emergency administration may be unavailable during an incident.
+    recommended_actions:
+      - Confirm Conditional Access exclusion evidence for every break-glass account.
+      - Test emergency access sign-in after policy deployment.
+      - Keep at least two independently protected emergency access accounts.
+
+  - code: vpn_access_disruption
+    change_types:
+      - mfa_rollout
+      - conditional_access
+      - legacy_authentication_block
+    asset_conditions:
+      asset_type: vpn
+      authentication_method_any:
+        - RADIUS
+        - legacy_client
+        - password
+    dependency_conditions:
+      change_text_any:
+        - contractor
+      has_dependency_type:
+        - authenticates_through
+        - used_by
+    failure_mode: Contractor remote access may be disrupted.
+    business_impact: Contractors may lose VPN access and be unable to reach internal systems.
+    recommended_actions:
+      - Validate RADIUS and VPN sign-in behavior in a pilot group.
+      - Prepare a temporary exception or staged policy for VPN users.
+      - Confirm network operations support coverage during rollout.
+
+  - code: business_service_interruption
+    change_types:
+      - mfa_rollout
+      - conditional_access
+      - legacy_authentication_block
+    asset_conditions:
+      asset_type_any:
+        - application
+        - integration
+        - vpn
+      criticality_any:
+        - high
+        - critical
+    dependency_conditions:
+      supports_business_service: true
+    failure_mode: Business service interruption is possible.
+    business_impact: A high-criticality business service may stop or degrade because a dependent asset cannot authenticate.
+    recommended_actions:
+      - Confirm business owner acceptance for the affected service.
+      - Define service-specific validation checks.
+      - Add a rollback trigger tied to business service health.

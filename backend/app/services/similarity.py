@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.change import ChangeRequest, HistoricalChange
 from app.services.change_requests import get_change_request
+from app.services.demo_assets import get_demo_asset_context
 
 
 TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
@@ -46,19 +47,22 @@ class SimilarHistoricalChange:
     incident_occurred: bool
     root_cause: str | None
     downtime_minutes: int
+    rollback_required: bool
     lessons_learned: str | None
+    historical_failure_signal: bool
+    historical_severity: str
 
 
 class SimilarityService:
     weights = {
-        "environment": 0.20,
-        "change_type": 0.25,
-        "title_keywords": 0.15,
-        "description_keywords": 0.15,
-        "affected_scope": 0.10,
-        "incident": 0.05,
-        "root_cause": 0.05,
-        "rollback_required": 0.05,
+        "environment": 0.18,
+        "change_type": 0.22,
+        "title_keywords": 0.14,
+        "description_keywords": 0.14,
+        "affected_scope": 0.12,
+        "object_types": 0.08,
+        "authentication_methods": 0.08,
+        "policy_type": 0.04,
     }
 
     def find_similar(
@@ -66,17 +70,16 @@ class SimilarityService:
         change_request: ChangeRequest,
         historical_changes: list[HistoricalChange],
         limit: int = 5,
+        asset_context: str = "",
     ) -> list[SimilarHistoricalChange]:
         limit = min(max(limit, 1), 20)
         results = [
-            self.score_historical_change(change_request, historical_change)
+            self.score_historical_change(change_request, historical_change, asset_context=asset_context)
             for historical_change in historical_changes
         ]
         results.sort(
             key=lambda result: (
                 -result.similarity_score,
-                result.outcome != "failed",
-                not result.incident_occurred,
                 str(result.historical_change_id),
             )
         )
@@ -86,9 +89,12 @@ class SimilarityService:
         self,
         change_request: ChangeRequest,
         historical_change: HistoricalChange,
+        asset_context: str = "",
     ) -> SimilarHistoricalChange:
         score = 0.0
         matching_factors: list[str] = []
+        change_text = self._change_text(change_request, asset_context=asset_context)
+        historical_text = self._historical_text(historical_change)
 
         if self._value(change_request.environment) == self._value(historical_change.environment):
             score += self.weights["environment"]
@@ -111,37 +117,36 @@ class SimilarityService:
             score += self.weights["description_keywords"] * description_score
             matching_factors.append(f"description_keywords={', '.join(description_matches)}")
 
-        historical_scope_text = " ".join(
-            value
-            for value in (
-                historical_change.title,
-                historical_change.description,
-                historical_change.lessons_learned,
-            )
-            if value
-        )
-        scope_score, scope_matches = self._token_coverage(change_request.affected_scope, historical_scope_text)
+        scope_score, scope_matches = self._token_coverage(change_request.affected_scope, historical_text)
         if scope_score:
             score += self.weights["affected_scope"] * scope_score
             matching_factors.append(f"affected_scope_keywords={', '.join(scope_matches)}")
 
-        if historical_change.incident_occurred:
-            score += self.weights["incident"]
-            matching_factors.append("historical_incident=true")
+        object_type_score, object_type_matches = self._set_overlap_score(
+            self._extract_object_types(change_text),
+            self._extract_object_types(historical_text),
+        )
+        if object_type_score:
+            score += self.weights["object_types"] * object_type_score
+            matching_factors.append(f"object_types={', '.join(object_type_matches)}")
 
-        if historical_change.root_cause:
-            root_cause_score, root_cause_matches = self._root_cause_score(change_request, historical_change.root_cause)
-            score += self.weights["root_cause"] * root_cause_score
-            if root_cause_matches:
-                matching_factors.append(
-                    f"root_cause={historical_change.root_cause}; matched_keywords={', '.join(root_cause_matches)}"
-                )
-            else:
-                matching_factors.append(f"root_cause={historical_change.root_cause}")
+        auth_score, auth_matches = self._set_overlap_score(
+            self._extract_authentication_methods(change_text),
+            self._extract_authentication_methods(historical_text),
+        )
+        if auth_score:
+            score += self.weights["authentication_methods"] * auth_score
+            matching_factors.append(f"authentication_methods={', '.join(auth_matches)}")
 
-        if historical_change.rollback_required:
-            score += self.weights["rollback_required"]
-            matching_factors.append("rollback_required=true")
+        policy_score, policy_matches = self._set_overlap_score(
+            self._extract_policy_types(change_text),
+            self._extract_policy_types(historical_text),
+        )
+        if policy_score:
+            score += self.weights["policy_type"] * policy_score
+            matching_factors.append(f"policy_type={', '.join(policy_matches)}")
+
+        historical_failure_signal = self._historical_failure_signal(historical_change)
 
         return SimilarHistoricalChange(
             historical_change_id=historical_change.id,
@@ -152,7 +157,10 @@ class SimilarityService:
             incident_occurred=historical_change.incident_occurred,
             root_cause=historical_change.root_cause,
             downtime_minutes=historical_change.downtime_minutes,
+            rollback_required=historical_change.rollback_required,
             lessons_learned=historical_change.lessons_learned,
+            historical_failure_signal=historical_failure_signal,
+            historical_severity=self._historical_severity(historical_change, historical_failure_signal),
         )
 
     def _token_coverage(self, query_text: str, candidate_text: str) -> tuple[float, list[str]]:
@@ -166,22 +174,108 @@ class SimilarityService:
             return 0.0, []
         return len(matches) / len(query_tokens), matches
 
-    def _root_cause_score(self, change_request: ChangeRequest, root_cause: str) -> tuple[float, list[str]]:
-        root_cause_tokens = self._tokens(root_cause.replace("_", " "))
-        change_tokens = self._tokens(
-            " ".join(
-                [
-                    change_request.title,
-                    change_request.description,
-                    change_request.affected_scope,
-                    change_request.rollback_plan,
-                ]
-            )
-        )
-        matches = sorted(root_cause_tokens & change_tokens)
+    def _set_overlap_score(self, query_values: set[str], candidate_values: set[str]) -> tuple[float, list[str]]:
+        if not query_values:
+            return 0.0, []
+        matches = sorted(query_values & candidate_values)
         if matches:
-            return 1.0, matches
-        return 0.5, []
+            return len(matches) / len(query_values), matches
+        return 0.0, []
+
+    def _change_text(self, change_request: ChangeRequest, asset_context: str = "") -> str:
+        return " ".join(
+            [
+                change_request.title,
+                change_request.description,
+                change_request.affected_scope,
+                change_request.rollback_plan,
+                self._value(change_request.environment),
+                self._value(change_request.change_type),
+                asset_context,
+            ]
+        )
+
+    def _historical_text(self, historical_change: HistoricalChange) -> str:
+        return " ".join(
+            value
+            for value in (
+                historical_change.title,
+                historical_change.description,
+                historical_change.lessons_learned,
+                self._value(historical_change.environment),
+                self._value(historical_change.change_type),
+            )
+            if value
+        )
+
+    def _extract_object_types(self, text: str) -> set[str]:
+        lowered = text.lower()
+        object_types: set[str] = set()
+        indicators = {
+            "contractor_accounts": ("contractor", "external account", "vendor account"),
+            "service_account": ("service account", "automation", "workload identity", "daemon"),
+            "break_glass_account": ("break-glass", "break glass", "emergency access"),
+            "legacy_application": ("legacy application", "legacy business", "old client", "legacy portal"),
+            "vpn": ("vpn", "remote access"),
+            "policy": ("policy", "conditional access", "enforcement"),
+            "privileged_account": ("privileged", "administrator", "admin", "global administrator"),
+            "guest_account": ("guest", "external user"),
+            "device_group": ("device", "compliance"),
+        }
+        for object_type, keywords in indicators.items():
+            if any(keyword in lowered for keyword in keywords):
+                object_types.add(object_type)
+        return object_types
+
+    def _extract_authentication_methods(self, text: str) -> set[str]:
+        lowered = text.lower().replace("-", "_")
+        methods: set[str] = set()
+        indicators = {
+            "mfa": ("mfa", "multifactor", "authenticator"),
+            "basic_auth": ("basic auth", "basic_auth", "basic authentication"),
+            "ews": ("ews", "exchange web services"),
+            "smtp_auth": ("smtp auth", "smtp_auth"),
+            "radius": ("radius",),
+            "legacy_client": ("legacy client", "old client", "legacy_client"),
+            "password": ("password",),
+            "conditional_access": ("conditional access",),
+        }
+        for method, keywords in indicators.items():
+            if any(keyword in lowered for keyword in keywords):
+                methods.add(method)
+        return methods
+
+    def _extract_policy_types(self, text: str) -> set[str]:
+        lowered = text.lower().replace("-", "_")
+        policy_types: set[str] = set()
+        indicators = {
+            "mfa_rollout": ("mfa", "multifactor", "authenticator"),
+            "conditional_access": ("conditional access", "ca policy"),
+            "legacy_authentication_block": ("legacy authentication", "basic auth", "smtp auth", "imap", "pop"),
+            "defender_policy": ("defender", "endpoint detection"),
+            "device_compliance": ("device compliance", "managed devices", "unmanaged devices"),
+            "password_policy": ("password policy", "password reset", "password expiration"),
+        }
+        for policy_type, keywords in indicators.items():
+            if any(keyword in lowered for keyword in keywords):
+                policy_types.add(policy_type)
+        return policy_types
+
+    def _historical_failure_signal(self, historical_change: HistoricalChange) -> bool:
+        return (
+            historical_change.outcome == "failed"
+            or historical_change.incident_occurred
+            or historical_change.rollback_required
+        )
+
+    def _historical_severity(self, historical_change: HistoricalChange, failure_signal: bool) -> str:
+        if not failure_signal:
+            return "low"
+        if historical_change.downtime_minutes >= 240:
+            return "critical"
+        if historical_change.downtime_minutes >= 60 or historical_change.rollback_required:
+            return "high"
+        return "medium"
 
     def _tokens(self, text: str | None) -> set[str]:
         if not text:
@@ -219,4 +313,5 @@ def find_similar_changes(
         change_request=change_request,
         historical_changes=historical_changes,
         limit=limit,
+        asset_context=get_demo_asset_context(change_request),
     )

@@ -6,44 +6,395 @@
     "change_type": "mfa_rollout",
     "assets": [
       {
-        "asset_type": "contractor_accounts",
-        "count": 127,
-        "description": "127 external contractor accounts in scope across Microsoft 365, VPN access, and vendor support workflows."
+        "id": "00000000-0000-5000-8000-000000000001",
+        "name": "Contractor Accounts",
+        "asset_type": "user_group",
+        "environment": "entra_id",
+        "description": "127 external contractor accounts used for Microsoft 365, VPN access, badge workflows, and vendor support workflows.",
+        "business_service": "Contractor Onboarding",
+        "owner": "Identity Operations",
+        "criticality": "critical",
+        "authentication_method": "password,mfa,legacy_client",
+        "is_legacy": false,
+        "is_privileged": false,
+        "asset_metadata": {
+          "users_count": 127,
+          "object_type": "contractor_accounts"
+        }
       },
       {
-        "asset_type": "legacy_applications",
-        "count": 4,
-        "description": "4 legacy business applications still use basic authentication, EWS, SMTP AUTH, or old client libraries.",
-        "examples": [
-          "Vendor Billing EWS Export",
-          "Facilities Badge Provisioning",
-          "Warehouse TimeClock Legacy Portal",
-          "Contractor Document Intake"
-        ]
+        "id": "00000000-0000-5000-8000-000000000002",
+        "name": "Vendor Billing EWS Export",
+        "asset_type": "application",
+        "environment": "microsoft_365",
+        "description": "Legacy export job that signs in with EWS and basic authentication to collect vendor billing mailbox data.",
+        "business_service": "Vendor Billing",
+        "owner": null,
+        "criticality": "high",
+        "authentication_method": "EWS,basic_auth,password",
+        "is_legacy": true,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "legacy_application"
+        }
       },
       {
-        "asset_type": "service_accounts",
-        "count": 3,
-        "description": "3 service accounts and automation identities are used by contractor onboarding and badge provisioning.",
-        "examples": [
-          "svc-contractor-sync",
-          "svc-vendor-billing",
-          "svc-badge-provisioning"
-        ]
+        "id": "00000000-0000-5000-8000-000000000003",
+        "name": "Facilities Badge Provisioning",
+        "asset_type": "application",
+        "environment": "entra_id",
+        "description": "Badge provisioning application used by facilities to grant contractor site access during onboarding.",
+        "business_service": "Badge Provisioning",
+        "owner": "Facilities IT",
+        "criticality": "high",
+        "authentication_method": "legacy_client,password",
+        "is_legacy": true,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "legacy_application"
+        }
       },
       {
-        "asset_type": "break_glass_accounts",
-        "count": 2,
-        "description": "2 break-glass emergency access accounts must remain excluded from MFA enforcement and validated after deployment.",
-        "examples": [
-          "breakglass-cloud-01",
-          "breakglass-cloud-02"
-        ]
+        "id": "00000000-0000-5000-8000-000000000004",
+        "name": "Warehouse TimeClock Legacy Portal",
+        "asset_type": "application",
+        "environment": "entra_id",
+        "description": "Legacy time clock portal used by contractors at warehouse locations with basic authentication.",
+        "business_service": "Contractor Onboarding",
+        "owner": "Warehouse Operations",
+        "criticality": "medium",
+        "authentication_method": "basic_auth,legacy_client",
+        "is_legacy": true,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "legacy_application"
+        }
       },
       {
-        "asset_type": "legacy_vpn_integration",
-        "count": 1,
-        "description": "1 legacy VPN integration depends on RADIUS authentication and contractor account sign-in behavior."
+        "id": "00000000-0000-5000-8000-000000000005",
+        "name": "Contractor Document Intake",
+        "asset_type": "application",
+        "environment": "microsoft_365",
+        "description": "Legacy document intake integration that receives contractor forms and sends mailbox notifications with SMTP AUTH.",
+        "business_service": "Contractor Onboarding",
+        "owner": "Vendor Management",
+        "criticality": "high",
+        "authentication_method": "SMTP_AUTH,password",
+        "is_legacy": true,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "legacy_application"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000006",
+        "name": "svc-contractor-sync",
+        "asset_type": "service_account",
+        "environment": "entra_id",
+        "description": "Automation identity that synchronizes contractor profile data from vendor intake into Entra ID groups.",
+        "business_service": "Contractor Onboarding",
+        "owner": "Identity Operations",
+        "criticality": "high",
+        "authentication_method": "password",
+        "is_legacy": false,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "service_account"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000007",
+        "name": "svc-vendor-billing",
+        "asset_type": "service_account",
+        "environment": "microsoft_365",
+        "description": "Service account used by the vendor billing export job to access EWS mailbox data.",
+        "business_service": "Vendor Billing",
+        "owner": "Finance Systems",
+        "criticality": "high",
+        "authentication_method": "password",
+        "is_legacy": false,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "service_account"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000008",
+        "name": "svc-badge-provisioning",
+        "asset_type": "service_account",
+        "environment": "entra_id",
+        "description": "Service account used by the facilities badge provisioning workflow.",
+        "business_service": "Badge Provisioning",
+        "owner": "Facilities IT",
+        "criticality": "high",
+        "authentication_method": "password,interactive",
+        "is_legacy": false,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "service_account"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000009",
+        "name": "breakglass-cloud-01",
+        "asset_type": "break_glass_account",
+        "environment": "entra_id",
+        "description": "Emergency access account for tenant recovery.",
+        "business_service": "Security Operations",
+        "owner": "Security Operations",
+        "criticality": "critical",
+        "authentication_method": "password",
+        "is_legacy": false,
+        "is_privileged": true,
+        "asset_metadata": {
+          "object_type": "break_glass_account"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000010",
+        "name": "breakglass-cloud-02",
+        "asset_type": "break_glass_account",
+        "environment": "entra_id",
+        "description": "Emergency access account for tenant recovery; exclusion evidence is not attached.",
+        "business_service": "Security Operations",
+        "owner": "Security Operations",
+        "criticality": "critical",
+        "authentication_method": "password",
+        "is_legacy": false,
+        "is_privileged": true,
+        "asset_metadata": {
+          "object_type": "break_glass_account"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000011",
+        "name": "Legacy Contractor VPN",
+        "asset_type": "vpn",
+        "environment": "entra_id",
+        "description": "Legacy VPN used by contractors for remote access. Authentication is proxied through RADIUS.",
+        "business_service": "Remote Contractor Access",
+        "owner": "Network Operations",
+        "criticality": "critical",
+        "authentication_method": "RADIUS,password,legacy_client",
+        "is_legacy": true,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "legacy_vpn_integration"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000012",
+        "name": "RADIUS authentication",
+        "asset_type": "integration",
+        "environment": "entra_id",
+        "description": "RADIUS authentication integration used by the legacy contractor VPN.",
+        "business_service": "Remote Contractor Access",
+        "owner": "Network Operations",
+        "criticality": "critical",
+        "authentication_method": "RADIUS",
+        "is_legacy": true,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "authentication_integration"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000013",
+        "name": "Conditional Access Exclusion",
+        "asset_type": "policy",
+        "environment": "entra_id",
+        "description": "Documented exclusion policy for emergency access validation. Only one break-glass account has attached evidence.",
+        "business_service": "Security Operations",
+        "owner": "Security Operations",
+        "criticality": "high",
+        "authentication_method": "conditional_access",
+        "is_legacy": false,
+        "is_privileged": true,
+        "asset_metadata": {
+          "object_type": "policy"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000014",
+        "name": "Contractor Onboarding",
+        "asset_type": "business_service",
+        "environment": "entra_id",
+        "description": "Business process for onboarding external contractors and enabling productive access.",
+        "business_service": "Contractor Onboarding",
+        "owner": "Vendor Management",
+        "criticality": "critical",
+        "authentication_method": null,
+        "is_legacy": false,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "business_service"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000015",
+        "name": "Vendor Billing",
+        "asset_type": "business_service",
+        "environment": "microsoft_365",
+        "description": "Business process for vendor billing reconciliation and export.",
+        "business_service": "Vendor Billing",
+        "owner": "Finance Operations",
+        "criticality": "high",
+        "authentication_method": null,
+        "is_legacy": false,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "business_service"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000016",
+        "name": "Badge Provisioning",
+        "asset_type": "business_service",
+        "environment": "entra_id",
+        "description": "Facilities business process for issuing contractor badges.",
+        "business_service": "Badge Provisioning",
+        "owner": "Facilities Operations",
+        "criticality": "high",
+        "authentication_method": null,
+        "is_legacy": false,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "business_service"
+        }
+      },
+      {
+        "id": "00000000-0000-5000-8000-000000000017",
+        "name": "Remote Contractor Access",
+        "asset_type": "business_service",
+        "environment": "entra_id",
+        "description": "Business service for contractor VPN and remote access.",
+        "business_service": "Remote Contractor Access",
+        "owner": "Network Operations",
+        "criticality": "critical",
+        "authentication_method": null,
+        "is_legacy": false,
+        "is_privileged": false,
+        "asset_metadata": {
+          "object_type": "business_service"
+        }
+      }
+    ],
+    "dependencies": [
+      {
+        "id": "00000000-0000-5001-8000-000000000001",
+        "source": "svc-vendor-billing",
+        "target": "Vendor Billing EWS Export",
+        "dependency_type": "depends_on",
+        "description": "The vendor billing service account runs the EWS export job."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000002",
+        "source": "Vendor Billing EWS Export",
+        "target": "Vendor Billing",
+        "dependency_type": "supports",
+        "description": "The EWS export feeds the vendor billing reconciliation process."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000003",
+        "source": "svc-badge-provisioning",
+        "target": "Facilities Badge Provisioning",
+        "dependency_type": "depends_on",
+        "description": "The badge service account authenticates to the facilities provisioning application."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000004",
+        "source": "Facilities Badge Provisioning",
+        "target": "Badge Provisioning",
+        "dependency_type": "supports",
+        "description": "Facilities Badge Provisioning supports the Badge Provisioning business process."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000005",
+        "source": "svc-contractor-sync",
+        "target": "Contractor Document Intake",
+        "dependency_type": "depends_on",
+        "description": "The contractor sync service account processes intake records from the document workflow."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000006",
+        "source": "Contractor Document Intake",
+        "target": "Contractor Onboarding",
+        "dependency_type": "supports",
+        "description": "Contractor Document Intake supports the Contractor Onboarding business process."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000007",
+        "source": "Contractor Accounts",
+        "target": "Legacy Contractor VPN",
+        "dependency_type": "used_by",
+        "description": "Contractor accounts are used by the legacy VPN for remote access."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000008",
+        "source": "Legacy Contractor VPN",
+        "target": "RADIUS authentication",
+        "dependency_type": "authenticates_through",
+        "description": "Legacy Contractor VPN authenticates through RADIUS."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000009",
+        "source": "Legacy Contractor VPN",
+        "target": "Remote Contractor Access",
+        "dependency_type": "supports",
+        "description": "Legacy Contractor VPN supports remote contractor access."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000010",
+        "source": "Contractor Accounts",
+        "target": "Warehouse TimeClock Legacy Portal",
+        "dependency_type": "used_by",
+        "description": "Contractor accounts are used by the warehouse time clock portal."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000011",
+        "source": "Warehouse TimeClock Legacy Portal",
+        "target": "Contractor Onboarding",
+        "dependency_type": "supports",
+        "description": "Warehouse time clock data feeds contractor onboarding validation."
+      },
+      {
+        "id": "00000000-0000-5001-8000-000000000012",
+        "source": "breakglass-cloud-01",
+        "target": "Conditional Access Exclusion",
+        "dependency_type": "protected_by",
+        "description": "breakglass-cloud-01 has documented Conditional Access exclusion evidence."
+      }
+    ],
+    "change_asset_relationships": [
+      {
+        "asset": "Contractor Accounts",
+        "relationship_type": "directly_affected",
+        "evidence": "Affected scope explicitly targets all contractor accounts."
+      },
+      {
+        "asset": "svc-contractor-sync",
+        "relationship_type": "directly_affected",
+        "evidence": "Service account supports contractor onboarding and uses password authentication."
+      },
+      {
+        "asset": "svc-vendor-billing",
+        "relationship_type": "directly_affected",
+        "evidence": "Service account signs into Microsoft 365 EWS workflows affected by MFA enforcement."
+      },
+      {
+        "asset": "svc-badge-provisioning",
+        "relationship_type": "directly_affected",
+        "evidence": "Service account is used by contractor badge provisioning."
+      },
+      {
+        "asset": "breakglass-cloud-01",
+        "relationship_type": "directly_affected",
+        "evidence": "Emergency access account must be validated against MFA policy exclusions."
+      },
+      {
+        "asset": "breakglass-cloud-02",
+        "relationship_type": "directly_affected",
+        "evidence": "Emergency access account has no attached exclusion validation evidence."
       }
     ]
   }

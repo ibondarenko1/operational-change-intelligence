@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Self
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -57,6 +57,8 @@ class RiskFactorCreate(BaseModel):
     code: str = Field(min_length=1, max_length=80)
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1)
+    category: str = Field(default="uncategorized", min_length=1, max_length=80)
+    category_cap: int = 100
     points: int
     evidence: str | None = None
 
@@ -65,6 +67,8 @@ class RiskFactorUpdate(BaseModel):
     code: str | None = Field(default=None, min_length=1, max_length=80)
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, min_length=1)
+    category: str | None = Field(default=None, min_length=1, max_length=80)
+    category_cap: int | None = None
     points: int | None = None
     evidence: str | None = None
 
@@ -102,16 +106,40 @@ class ChecklistItemResponse(ChecklistItemCreate):
 class RiskAssessmentCreate(BaseModel):
     change_request_id: uuid.UUID
     score: int
+    raw_score: int = 0
+    capped_score: int = 0
     level: str = Field(min_length=1, max_length=50)
     recommendation: str = Field(min_length=1)
     confidence: float
+    category_scores: dict[str, dict[str, int]] = Field(default_factory=dict)
+    formula_explanation: str = ""
+    similar_changes: list[dict[str, Any]] = Field(default_factory=list)
+    directly_affected_assets: list[dict[str, Any]] = Field(default_factory=list)
+    dependent_assets: list[dict[str, Any]] = Field(default_factory=list)
+    affected_business_services: list[dict[str, Any]] = Field(default_factory=list)
+    impact_paths: list[dict[str, Any]] = Field(default_factory=list)
+    predicted_failure_modes: list[dict[str, Any]] = Field(default_factory=list)
+    blast_radius: dict[str, int] = Field(default_factory=dict)
+    missing_context: list[str] = Field(default_factory=list)
 
 
 class RiskAssessmentUpdate(BaseModel):
     score: int | None = None
+    raw_score: int | None = None
+    capped_score: int | None = None
     level: str | None = Field(default=None, min_length=1, max_length=50)
     recommendation: str | None = Field(default=None, min_length=1)
     confidence: float | None = None
+    category_scores: dict[str, dict[str, int]] | None = None
+    formula_explanation: str | None = None
+    similar_changes: list[dict[str, Any]] | None = None
+    directly_affected_assets: list[dict[str, Any]] | None = None
+    dependent_assets: list[dict[str, Any]] | None = None
+    affected_business_services: list[dict[str, Any]] | None = None
+    impact_paths: list[dict[str, Any]] | None = None
+    predicted_failure_modes: list[dict[str, Any]] | None = None
+    blast_radius: dict[str, int] | None = None
+    missing_context: list[str] | None = None
 
 
 class RiskAssessmentResponse(RiskAssessmentCreate):
@@ -135,6 +163,11 @@ class HistoricalChangeCreate(BaseModel):
     rollback_required: bool = False
     root_cause: str | None = None
     lessons_learned: str | None = None
+    trigger: str | None = None
+    technical_cause: str | None = None
+    process_failure: str | None = None
+    business_impact: str | None = None
+    preventive_control: str | None = None
 
 
 class HistoricalChangeUpdate(BaseModel):
@@ -148,6 +181,11 @@ class HistoricalChangeUpdate(BaseModel):
     rollback_required: bool | None = None
     root_cause: str | None = None
     lessons_learned: str | None = None
+    trigger: str | None = None
+    technical_cause: str | None = None
+    process_failure: str | None = None
+    business_impact: str | None = None
+    preventive_control: str | None = None
 
 
 class HistoricalChangeResponse(HistoricalChangeCreate):
@@ -166,7 +204,10 @@ class SimilarHistoricalChangeResponse(BaseModel):
     incident_occurred: bool
     root_cause: str | None = None
     downtime_minutes: int
+    rollback_required: bool = False
     lessons_learned: str | None = None
+    historical_failure_signal: bool = False
+    historical_severity: str = "low"
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -11,7 +11,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Piloting with payroll approvers and validating service account exclusions avoided month-end processing impact.",
-    "created_at": "2025-01-14T18:30:00Z"
+    "created_at": "2025-01-14T18:30:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000002",
@@ -25,7 +30,12 @@
     "rollback_required": true,
     "root_cause": "missing_exception",
     "lessons_learned": "Review vendor-operated shared accounts and create time-boxed exceptions before broad MFA enforcement.",
-    "created_at": "2025-02-03T07:45:00Z"
+    "created_at": "2025-02-03T07:45:00Z",
+    "trigger": "Change 'MFA enforcement for all contractors' moved from planned state to enforcement.",
+    "technical_cause": "A required user, app, or account exception was absent from the policy.",
+    "process_failure": "Required exception was not documented before rollout.",
+    "business_impact": "Affected business users lost access until an exception or rollback was applied.",
+    "preventive_control": "Review vendor-operated shared accounts and create time-boxed exceptions before broad MFA enforcement."
   },
   {
     "id": "00000000-0000-4000-8000-000000000003",
@@ -39,7 +49,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "A registration-only phase gave the helpdesk time to resolve device issues before enforcement.",
-    "created_at": "2025-02-19T16:00:00Z"
+    "created_at": "2025-02-19T16:00:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000004",
@@ -53,7 +68,12 @@
     "rollback_required": true,
     "root_cause": "break_glass_account_impact",
     "lessons_learned": "Break-glass accounts must be explicitly excluded and tested after every authentication policy update.",
-    "created_at": "2025-03-06T21:10:00Z"
+    "created_at": "2025-03-06T21:10:00Z",
+    "trigger": "Change 'MFA enforcement for emergency access accounts' moved from planned state to enforcement.",
+    "technical_cause": "Emergency access account was affected by the enforcement policy.",
+    "process_failure": "Break-glass exclusion validation was missing.",
+    "business_impact": "Emergency tenant recovery was temporarily unavailable.",
+    "preventive_control": "Break-glass accounts must be explicitly excluded and tested after every authentication policy update."
   },
   {
     "id": "00000000-0000-4000-8000-000000000005",
@@ -67,7 +87,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Checking authenticator app versions during pilot reduced avoidable service desk contacts.",
-    "created_at": "2025-03-24T19:15:00Z"
+    "created_at": "2025-03-24T19:15:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000006",
@@ -81,7 +106,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Report-only evaluation identified expected travel scenarios before enforcement.",
-    "created_at": "2025-04-02T18:00:00Z"
+    "created_at": "2025-04-02T18:00:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000007",
@@ -95,7 +125,12 @@
     "rollback_required": true,
     "root_cause": "service_account_impact",
     "lessons_learned": "Conditional Access changes need an explicit inventory of automation identities and workload identities.",
-    "created_at": "2025-04-17T05:30:00Z"
+    "created_at": "2025-04-17T05:30:00Z",
+    "trigger": "Change 'Conditional Access block for high-risk sign-ins' moved from planned state to enforcement.",
+    "technical_cause": "Automation identity failed authentication after the policy changed.",
+    "process_failure": "Service account inventory was incomplete before enforcement.",
+    "business_impact": "Automation stopped and delayed dependent business workflows.",
+    "preventive_control": "Conditional Access changes need an explicit inventory of automation identities and workload identities."
   },
   {
     "id": "00000000-0000-4000-8000-000000000008",
@@ -109,7 +144,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Validating administrator device compliance before enforcement avoided lockouts.",
-    "created_at": "2025-05-01T20:00:00Z"
+    "created_at": "2025-05-01T20:00:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000009",
@@ -123,7 +163,12 @@
     "rollback_required": true,
     "root_cause": "incorrect_scope",
     "lessons_learned": "Peer review must include cloud app scope and expected exclusions, not only user groups.",
-    "created_at": "2025-05-15T12:20:00Z"
+    "created_at": "2025-05-15T12:20:00Z",
+    "trigger": "Change 'Conditional Access policy for Exchange ActiveSync' moved from planned state to enforcement.",
+    "technical_cause": "The enforcement policy matched more objects than intended.",
+    "process_failure": "Policy scope included identities or systems that should have been excluded.",
+    "business_impact": "Unexpected users or systems were blocked from normal work.",
+    "preventive_control": "Peer review must include cloud app scope and expected exclusions, not only user groups."
   },
   {
     "id": "00000000-0000-4000-8000-000000000010",
@@ -137,7 +182,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Admin-facing changes should include screenshots of the expected re-authentication prompt.",
-    "created_at": "2025-05-27T17:45:00Z"
+    "created_at": "2025-05-27T17:45:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000011",
@@ -151,7 +201,12 @@
     "rollback_required": true,
     "root_cause": "legacy_application_dependency",
     "lessons_learned": "Legacy protocol sign-ins must be mapped to application owners, not only counted by user principal name.",
-    "created_at": "2025-06-03T04:00:00Z"
+    "created_at": "2025-06-03T04:00:00Z",
+    "trigger": "Change 'Block legacy authentication for Exchange Online' moved from planned state to enforcement.",
+    "technical_cause": "Legacy protocol or client could not satisfy the new authentication requirement.",
+    "process_failure": "Legacy application dependency was not identified before the change.",
+    "business_impact": "Legacy application users or jobs could not complete work.",
+    "preventive_control": "Legacy protocol sign-ins must be mapped to application owners, not only counted by user principal name."
   },
   {
     "id": "00000000-0000-4000-8000-000000000012",
@@ -165,7 +220,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "A 45-day sign-in review window gave enough confidence for dormant protocol removal.",
-    "created_at": "2025-06-19T03:30:00Z"
+    "created_at": "2025-06-19T03:30:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000013",
@@ -179,7 +239,12 @@
     "rollback_required": true,
     "root_cause": "unknown_dependency",
     "lessons_learned": "Shared mailbox protocol usage must be correlated with vendor integrations before disabling SMTP AUTH.",
-    "created_at": "2025-07-01T06:10:00Z"
+    "created_at": "2025-07-01T06:10:00Z",
+    "trigger": "Change 'SMTP AUTH disablement for shared mailboxes' moved from planned state to enforcement.",
+    "technical_cause": "An unmanaged dependency consumed the changed authentication path.",
+    "process_failure": "Dependency discovery missed a consuming system.",
+    "business_impact": "An undocumented business workflow was interrupted.",
+    "preventive_control": "Shared mailbox protocol usage must be correlated with vendor integrations before disabling SMTP AUTH."
   },
   {
     "id": "00000000-0000-4000-8000-000000000014",
@@ -193,7 +258,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Post-change validation should include both Outlook desktop and native mobile clients.",
-    "created_at": "2025-07-16T03:45:00Z"
+    "created_at": "2025-07-16T03:45:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000015",
@@ -207,7 +277,12 @@
     "rollback_required": true,
     "root_cause": "documentation_gap",
     "lessons_learned": "Acquired tenant integrations require a separate dependency review before baseline policies are applied.",
-    "created_at": "2025-07-30T22:30:00Z"
+    "created_at": "2025-07-30T22:30:00Z",
+    "trigger": "Change 'Legacy authentication block for a acquired tenant' moved from planned state to enforcement.",
+    "technical_cause": "The implementation used stale or incomplete configuration records.",
+    "process_failure": "Runbook and ownership documentation were incomplete.",
+    "business_impact": "Operators could not identify the correct owner or dependency quickly.",
+    "preventive_control": "Acquired tenant integrations require a separate dependency review before baseline policies are applied."
   },
   {
     "id": "00000000-0000-4000-8000-000000000016",
@@ -221,7 +296,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Role removal is low risk when ownership and recent sign-in activity are reviewed together.",
-    "created_at": "2025-08-05T18:20:00Z"
+    "created_at": "2025-08-05T18:20:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000017",
@@ -235,7 +315,12 @@
     "rollback_required": true,
     "root_cause": "privileged_account_lockout",
     "lessons_learned": "PIM approval chains must be reviewed before removing privileged administrative roles.",
-    "created_at": "2025-08-21T05:15:00Z"
+    "created_at": "2025-08-21T05:15:00Z",
+    "trigger": "Change 'Remove Privileged Role Administrator from operations group' moved from planned state to enforcement.",
+    "technical_cause": "Administrative sign-in was blocked by the new policy.",
+    "process_failure": "Privileged access recovery was not tested before enforcement.",
+    "business_impact": "Administrators could not perform recovery actions immediately.",
+    "preventive_control": "PIM approval chains must be reviewed before removing privileged administrative roles."
   },
   {
     "id": "00000000-0000-4000-8000-000000000018",
@@ -249,7 +334,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Testing PIM activation before removing permanent access prevents administrative gaps.",
-    "created_at": "2025-09-02T17:00:00Z"
+    "created_at": "2025-09-02T17:00:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000019",
@@ -263,7 +353,12 @@
     "rollback_required": true,
     "root_cause": "rollback_failure",
     "lessons_learned": "Rollback steps must be tested against current access packages, not copied from old change tickets.",
-    "created_at": "2025-09-18T23:40:00Z"
+    "created_at": "2025-09-18T23:40:00Z",
+    "trigger": "Change 'Remove Security Administrator from legacy SOC account' moved from planned state to enforcement.",
+    "technical_cause": "Rollback steps did not restore the previous service state.",
+    "process_failure": "Rollback procedure was not validated end-to-end.",
+    "business_impact": "Service disruption lasted longer because recovery was delayed.",
+    "preventive_control": "Rollback steps must be tested against current access packages, not copied from old change tickets."
   },
   {
     "id": "00000000-0000-4000-8000-000000000020",
@@ -277,7 +372,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Subscription owner cleanup should be approved by resource group owners and tenant security.",
-    "created_at": "2025-10-01T16:25:00Z"
+    "created_at": "2025-10-01T16:25:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000021",
@@ -291,7 +391,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Partner domain owners should sign off on guest access allow lists before enforcement.",
-    "created_at": "2025-10-09T18:00:00Z"
+    "created_at": "2025-10-09T18:00:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000022",
@@ -305,7 +410,12 @@
     "rollback_required": false,
     "root_cause": "missing_exception",
     "lessons_learned": "Approved guest domains need a merger and acquisition exception review before tenant-wide enforcement.",
-    "created_at": "2025-10-23T14:00:00Z"
+    "created_at": "2025-10-23T14:00:00Z",
+    "trigger": "Change 'Block guest invitations outside approved domains' moved from planned state to enforcement.",
+    "technical_cause": "A required user, app, or account exception was absent from the policy.",
+    "process_failure": "Required exception was not documented before rollout.",
+    "business_impact": "Affected business users lost access until an exception or rollback was applied.",
+    "preventive_control": "Approved guest domains need a merger and acquisition exception review before tenant-wide enforcement."
   },
   {
     "id": "00000000-0000-4000-8000-000000000023",
@@ -319,7 +429,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Staged disabling before deletion gives application owners time to catch false positives.",
-    "created_at": "2025-11-04T19:30:00Z"
+    "created_at": "2025-11-04T19:30:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000024",
@@ -333,7 +448,12 @@
     "rollback_required": true,
     "root_cause": "poor_communication",
     "lessons_learned": "External sharing changes must be communicated to customer-facing teams with upcoming launch events.",
-    "created_at": "2025-11-18T15:45:00Z"
+    "created_at": "2025-11-18T15:45:00Z",
+    "trigger": "Change 'Restrict external sharing in SharePoint' moved from planned state to enforcement.",
+    "technical_cause": "Users were blocked because operational readiness steps were missed.",
+    "process_failure": "Affected users and service owners were not notified in time.",
+    "business_impact": "Support volume increased and business users could not prepare.",
+    "preventive_control": "External sharing changes must be communicated to customer-facing teams with upcoming launch events."
   },
   {
     "id": "00000000-0000-4000-8000-000000000025",
@@ -347,7 +467,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Access reviews are safer when removal happens only after explicit owner attestation.",
-    "created_at": "2025-12-02T20:10:00Z"
+    "created_at": "2025-12-02T20:10:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000026",
@@ -361,7 +486,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Audit mode telemetry should be reviewed with application owners before ASR enforcement.",
-    "created_at": "2025-12-11T18:40:00Z"
+    "created_at": "2025-12-11T18:40:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000027",
@@ -375,7 +505,12 @@
     "rollback_required": true,
     "root_cause": "insufficient_testing",
     "lessons_learned": "Security policy testing must include device provisioning workflows, not only already-built endpoints.",
-    "created_at": "2026-01-06T09:20:00Z"
+    "created_at": "2026-01-06T09:20:00Z",
+    "trigger": "Change 'Defender Antivirus cloud protection enforcement' moved from planned state to enforcement.",
+    "technical_cause": "The deployment path was not validated against realistic production usage.",
+    "process_failure": "Pilot validation did not represent production dependencies.",
+    "business_impact": "Production users experienced issues that should have been caught in pilot.",
+    "preventive_control": "Security policy testing must include device provisioning workflows, not only already-built endpoints."
   },
   {
     "id": "00000000-0000-4000-8000-000000000028",
@@ -389,7 +524,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "IT pilot groups should include users with representative SaaS usage before web filtering expansion.",
-    "created_at": "2026-01-16T17:10:00Z"
+    "created_at": "2026-01-16T17:10:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000029",
@@ -403,7 +543,12 @@
     "rollback_required": true,
     "root_cause": "unknown_dependency",
     "lessons_learned": "Device control pilots must include kiosks, shared workstations, and offline operational workflows.",
-    "created_at": "2026-02-02T08:35:00Z"
+    "created_at": "2026-02-02T08:35:00Z",
+    "trigger": "Change 'Block USB removable storage with Defender device control' moved from planned state to enforcement.",
+    "technical_cause": "An unmanaged dependency consumed the changed authentication path.",
+    "process_failure": "Dependency discovery missed a consuming system.",
+    "business_impact": "An undocumented business workflow was interrupted.",
+    "preventive_control": "Device control pilots must include kiosks, shared workstations, and offline operational workflows."
   },
   {
     "id": "00000000-0000-4000-8000-000000000030",
@@ -417,7 +562,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Endpoint health baselines make it easier to separate policy impact from normal device noise.",
-    "created_at": "2026-02-14T19:50:00Z"
+    "created_at": "2026-02-14T19:50:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000031",
@@ -431,7 +581,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Clear remediation messages reduce helpdesk load during compliance enforcement.",
-    "created_at": "2026-02-27T18:00:00Z"
+    "created_at": "2026-02-27T18:00:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000032",
@@ -445,7 +600,12 @@
     "rollback_required": false,
     "root_cause": "insufficient_testing",
     "lessons_learned": "Compliance policies should be tested on lab and engineering hardware, not only standard corporate images.",
-    "created_at": "2026-03-10T11:30:00Z"
+    "created_at": "2026-03-10T11:30:00Z",
+    "trigger": "Change 'Enforce BitLocker compliance for Windows devices' moved from planned state to enforcement.",
+    "technical_cause": "The deployment path was not validated against realistic production usage.",
+    "process_failure": "Pilot validation did not represent production dependencies.",
+    "business_impact": "Production users experienced issues that should have been caught in pilot.",
+    "preventive_control": "Compliance policies should be tested on lab and engineering hardware, not only standard corporate images."
   },
   {
     "id": "00000000-0000-4000-8000-000000000033",
@@ -459,7 +619,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Mobile OS compliance changes need a clear grace period and user-visible remediation instructions.",
-    "created_at": "2026-03-24T16:15:00Z"
+    "created_at": "2026-03-24T16:15:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000034",
@@ -473,7 +638,12 @@
     "rollback_required": true,
     "root_cause": "timing_issue",
     "lessons_learned": "Non-persistent VDI needs separate compliance timing and grace-period validation.",
-    "created_at": "2026-04-07T13:05:00Z"
+    "created_at": "2026-04-07T13:05:00Z",
+    "trigger": "Change 'Device compliance enforcement for virtual desktops' moved from planned state to enforcement.",
+    "technical_cause": "The change landed during active business processing.",
+    "process_failure": "Implementation timing conflicted with a business-critical window.",
+    "business_impact": "A business-critical process was interrupted during an active window.",
+    "preventive_control": "Non-persistent VDI needs separate compliance timing and grace-period validation."
   },
   {
     "id": "00000000-0000-4000-8000-000000000035",
@@ -487,7 +657,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Narrow targeting and hardware readiness checks make secure boot enforcement predictable.",
-    "created_at": "2026-04-21T20:00:00Z"
+    "created_at": "2026-04-21T20:00:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000036",
@@ -501,7 +676,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Helpdesk scripts must be updated before password policy enforcement begins.",
-    "created_at": "2026-05-05T17:30:00Z"
+    "created_at": "2026-05-05T17:30:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000037",
@@ -515,7 +695,12 @@
     "rollback_required": true,
     "root_cause": "service_account_impact",
     "lessons_learned": "Password policy changes must be tested against identity automation and onboarding workflows.",
-    "created_at": "2026-05-19T12:45:00Z"
+    "created_at": "2026-05-19T12:45:00Z",
+    "trigger": "Change 'Block weak password patterns for service desk accounts' moved from planned state to enforcement.",
+    "technical_cause": "Automation identity failed authentication after the policy changed.",
+    "process_failure": "Service account inventory was incomplete before enforcement.",
+    "business_impact": "Automation stopped and delayed dependent business workflows.",
+    "preventive_control": "Password policy changes must be tested against identity automation and onboarding workflows."
   },
   {
     "id": "00000000-0000-4000-8000-000000000038",
@@ -529,7 +714,12 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Explaining compensating controls prevents confusion when password expiration is removed.",
-    "created_at": "2026-06-02T18:20:00Z"
+    "created_at": "2026-06-02T18:20:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   },
   {
     "id": "00000000-0000-4000-8000-000000000039",
@@ -543,7 +733,12 @@
     "rollback_required": true,
     "root_cause": "legacy_application_dependency",
     "lessons_learned": "Authentication bridges and VPN integrations need lockout simulation before threshold reductions.",
-    "created_at": "2026-06-16T06:40:00Z"
+    "created_at": "2026-06-16T06:40:00Z",
+    "trigger": "Change 'Smart lockout threshold reduction' moved from planned state to enforcement.",
+    "technical_cause": "Legacy protocol or client could not satisfy the new authentication requirement.",
+    "process_failure": "Legacy application dependency was not identified before the change.",
+    "business_impact": "Legacy application users or jobs could not complete work.",
+    "preventive_control": "Authentication bridges and VPN integrations need lockout simulation before threshold reductions."
   },
   {
     "id": "00000000-0000-4000-8000-000000000040",
@@ -557,6 +752,11 @@
     "rollback_required": false,
     "root_cause": null,
     "lessons_learned": "Audit-only expansion provides realistic password policy telemetry without disrupting sign-ins.",
-    "created_at": "2026-06-30T18:10:00Z"
+    "created_at": "2026-06-30T18:10:00Z",
+    "trigger": null,
+    "technical_cause": null,
+    "process_failure": null,
+    "business_impact": null,
+    "preventive_control": null
   }
 ]

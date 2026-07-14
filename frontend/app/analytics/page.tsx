@@ -85,6 +85,23 @@ export default function AnalyticsPage() {
         <EmptyState title="No summary" message="No historical changes are available." />
       )}
 
+      {summary ? (
+        <section className="section grid-3">
+          <div>
+            <h2>Process Failures</h2>
+            <p className="muted">{summary.common_process_failures.map(formatLabel).join("; ") || "None"}</p>
+          </div>
+          <div>
+            <h2>Business Impacts</h2>
+            <p className="muted">{summary.common_business_impacts.map(formatLabel).join("; ") || "None"}</p>
+          </div>
+          <div>
+            <h2>Preventive Controls</h2>
+            <p className="muted">{summary.common_preventive_controls.map(formatLabel).join("; ") || "None"}</p>
+          </div>
+        </section>
+      ) : null}
+
       <section className="section">
         <div className="section-header">
           <div>
@@ -192,6 +209,12 @@ export default function AnalyticsPage() {
                 <p>
                   <strong>Evidence:</strong> {pattern.evidence.join("; ")}
                 </p>
+                {pattern.process_failure ? (
+                  <p>
+                    <strong>Causal chain:</strong> {pattern.process_failure} - {pattern.technical_cause} -{" "}
+                    {pattern.business_impact}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>

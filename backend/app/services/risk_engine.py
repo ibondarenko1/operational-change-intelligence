@@ -7,11 +7,11 @@ from typing import Any
 import yaml
 
 from app.models.change import ChangeRequest, HistoricalChange
-from app.services.similarity import SimilarityService
+from app.services.similarity import SimilarHistoricalChange, SimilarityService
 
 
 DEFAULT_RULES_PATH = Path(__file__).resolve().parents[1] / "rules" / "change_risk_rules.yaml"
-FORMULA = "score = min(100, max(0, sum(risk_factors.points)))"
+FORMULA = "score = min(100, max(0, sum(min(sum(points by category), category_cap))))"
 
 
 @dataclass(frozen=True)
@@ -19,6 +19,8 @@ class RiskFactorResult:
     code: str
     title: str
     description: str
+    category: str
+    category_cap: int
     points: int
     evidence: str
 
@@ -36,10 +38,13 @@ class ChecklistItemResult:
 class RiskAssessmentResult:
     score: int
     raw_score: int
+    capped_score: int
+    category_scores: dict[str, dict[str, int]]
     level: str
     recommendation: str
     confidence: float
     formula: str
+    formula_explanation: str
     risk_factors: list[RiskFactorResult]
     checklist_items: list[ChecklistItemResult]
 
@@ -64,45 +69,60 @@ class RiskEngine:
         change_request: ChangeRequest,
         historical_changes: list[HistoricalChange] | None = None,
         asset_context: str | None = None,
+        similar_changes: list[SimilarHistoricalChange] | None = None,
     ) -> RiskAssessmentResult:
         historical_changes = historical_changes or []
         asset_context = asset_context or ""
         factors: list[RiskFactorResult] = []
         checklist_items: list[ChecklistItemResult] = []
+        matched_codes: set[str] = set()
 
         for rule in self.rules:
+            if rule["code"] == "weak_rollback_validation" and "rollback_plan_missing" in matched_codes:
+                continue
             matched, context, dynamic_points = self._evaluate_rule(
                 rule,
                 change_request,
                 historical_changes,
                 asset_context,
+                similar_changes,
             )
             if not matched:
                 continue
 
             points = dynamic_points if dynamic_points is not None else int(rule["points"])
+            category = str(rule["category"])
+            category_cap = int(rule["category_cap"])
             factors.append(
                 RiskFactorResult(
                     code=rule["code"],
                     title=rule["title"],
                     description=rule["description"],
+                    category=category,
+                    category_cap=category_cap,
                     points=points,
                     evidence=str(rule["evidence_template"]).format_map(_MissingFormatValue(context)),
                 )
             )
             checklist_items.extend(self._build_checklist_items(rule))
+            matched_codes.add(rule["code"])
 
         raw_score = sum(factor.points for factor in factors)
-        score = min(100, max(0, raw_score))
+        category_scores = self._category_scores(factors)
+        capped_score = sum(category["capped"] for category in category_scores.values())
+        score = min(100, max(0, capped_score))
         level = self._level_for_score(score)
 
         return RiskAssessmentResult(
             score=score,
             raw_score=raw_score,
+            capped_score=capped_score,
+            category_scores=category_scores,
             level=level,
             recommendation=self._recommendation_for_level(level),
             confidence=self._confidence_for_factors(factors, historical_changes),
             formula=FORMULA,
+            formula_explanation=self._formula_explanation(category_scores),
             risk_factors=factors,
             checklist_items=checklist_items,
         )
@@ -122,6 +142,7 @@ class RiskEngine:
         change_request: ChangeRequest,
         historical_changes: list[HistoricalChange],
         asset_context: str,
+        similar_changes: list[SimilarHistoricalChange] | None,
     ) -> tuple[bool, dict[str, Any], int | None]:
         conditions = rule.get("conditions", {})
         condition_type = conditions.get("type")
@@ -135,7 +156,7 @@ class RiskEngine:
         if condition_type == "bool_equals":
             return self._evaluate_bool_equals(conditions, change_request)
         if condition_type == "similar_failures":
-            return self._evaluate_similar_failures(conditions, change_request, historical_changes)
+            return self._evaluate_similar_failures(conditions, change_request, historical_changes, asset_context, similar_changes)
 
         raise ValueError(f"Unsupported rule condition type: {condition_type}")
 
@@ -205,20 +226,24 @@ class RiskEngine:
         conditions: dict[str, Any],
         change_request: ChangeRequest,
         historical_changes: list[HistoricalChange],
+        asset_context: str,
+        similar_changes: list[SimilarHistoricalChange] | None,
     ) -> tuple[bool, dict[str, Any], int | None]:
         minimum_similarity = float(conditions.get("minimum_similarity", 0.35))
         per_failure_points = int(conditions.get("per_failure_points", 10))
         max_points = int(conditions.get("max_points", 20))
-        similar_changes = self.similarity_service.find_similar(
-            change_request,
-            historical_changes,
-            limit=min(max(len(historical_changes), 1), 20),
-        )
+        if similar_changes is None:
+            similar_changes = self.similarity_service.find_similar(
+                change_request,
+                historical_changes,
+                limit=min(max(len(historical_changes), 1), 20),
+                asset_context=asset_context,
+            )
         failed_changes = [
             similar_change
             for similar_change in similar_changes
             if similar_change.similarity_score >= minimum_similarity
-            and (similar_change.outcome == "failed" or similar_change.incident_occurred)
+            and similar_change.historical_failure_signal
         ]
         if not failed_changes:
             return False, {}, None
@@ -257,6 +282,33 @@ class RiskEngine:
             )
             for item in rule.get("checklist_items", [])
         ]
+
+    def _category_scores(self, factors: list[RiskFactorResult]) -> dict[str, dict[str, int]]:
+        scores: dict[str, dict[str, int]] = {}
+        for factor in factors:
+            category = scores.setdefault(
+                factor.category,
+                {
+                    "raw": 0,
+                    "capped": 0,
+                    "cap": factor.category_cap,
+                },
+            )
+            category["raw"] += factor.points
+            category["cap"] = factor.category_cap
+
+        for category in scores.values():
+            category["capped"] = min(category["raw"], category["cap"])
+        return scores
+
+    def _formula_explanation(self, category_scores: dict[str, dict[str, int]]) -> str:
+        if not category_scores:
+            return "No rules matched; score is 0."
+        parts = [
+            f"{category}: raw={values['raw']}, capped={values['capped']}, cap={values['cap']}"
+            for category, values in sorted(category_scores.items())
+        ]
+        return "Category caps applied before final 0-100 clamp. " + "; ".join(parts)
 
     def _level_for_score(self, score: int) -> str:
         if score <= 29:

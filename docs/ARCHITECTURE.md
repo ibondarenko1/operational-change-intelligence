@@ -2,7 +2,7 @@
 
 ## Components
 
-Operational Change Intelligence is a small MVP composed of:
+Operational Change Intelligence is a deterministic MVP composed of:
 
 - Next.js frontend
 - FastAPI backend
@@ -10,43 +10,37 @@ Operational Change Intelligence is a small MVP composed of:
 - Alembic migrations
 - SQLAlchemy 2 models
 - Pydantic 2 schemas
-- YAML-based deterministic risk rules
-- Deterministic similarity service
-- Human Error Intelligence analytics service
-- Synthetic demo data and demo asset context
+- YAML-based risk rules
+- YAML-based failure mode rules
+- deterministic similarity service
+- deterministic impact analysis service
+- Human Error Intelligence analytics
+- synthetic historical changes and synthetic asset graph
 
 ## Runtime Flow
 
-1. User creates a `ChangeRequest` in the frontend.
+1. User creates a `ChangeRequest`.
 2. Frontend calls `POST /api/v1/changes`.
-3. User opens the change detail page.
-4. Frontend loads:
-   - `GET /api/v1/changes/{id}`
-   - `GET /api/v1/changes/{id}/similar`
-   - `GET /api/v1/changes/{id}/assessment`
-5. User runs analysis.
-6. Frontend calls `POST /api/v1/changes/{id}/analyze`.
-7. Backend loads:
-   - change request
-   - historical changes
-   - matching demo asset context
-   - YAML risk rules
-8. Risk engine creates:
-   - `RiskAssessment`
-   - `RiskFactor` records
-   - `ChecklistItem` records
-9. Frontend renders score, level, recommendation, evidence, checklist, similar failures, and lessons learned.
+3. User opens Change Details and runs analysis.
+4. Backend loads the change, historical changes, demo asset graph, asset dependencies, risk rules, and failure mode rules.
+5. `ImpactAnalysisService` identifies directly affected assets, dependent assets, business services, dependency paths, failure modes, blast radius, and missing context.
+6. `SimilarityService` ranks historical changes by similarity only. Historical outcome, incident, root cause, downtime, and rollback are returned as context, not used as similarity score.
+7. `RiskEngine` evaluates all matching risk rules, applies category caps, and creates risk factors and checklist items.
+8. Backend stores the latest `RiskAssessment`; repeated analysis replaces the previous assessment for the same change.
+9. Frontend renders impact summary, affected assets, dependency paths, failure modes, historical evidence, risk breakdown, checklist, and missing context.
 
 ## Backend Modules
 
 - `app/api`: HTTP routes.
 - `app/models`: SQLAlchemy models and enums.
 - `app/schemas`: Pydantic request/response contracts.
-- `app/services/risk_engine.py`: deterministic rule engine.
+- `app/services/impact_analysis.py`: asset dependency traversal and failure mode prediction.
+- `app/services/risk_engine.py`: deterministic category-capped rule engine.
 - `app/services/similarity.py`: deterministic historical similarity.
 - `app/services/analytics.py`: Human Error Intelligence analytics.
-- `app/services/demo_assets.py`: demo asset context matching.
+- `app/services/demo_assets.py`: idempotent synthetic asset graph seed and demo change linking.
 - `app/rules/change_risk_rules.yaml`: explainable risk rules.
+- `app/rules/failure_mode_rules.yaml`: explainable failure mode rules.
 
 ## Deployment
 

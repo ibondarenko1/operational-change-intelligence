@@ -49,6 +49,9 @@ class AnalyticsService:
             average_downtime_minutes=self._average([record.downtime_minutes for record in records]),
             most_common_root_cause=root_causes[0].root_cause if root_causes else None,
             highest_risk_change_type=highest_risk_change_type,
+            common_process_failures=self._common_optional_values(records, "process_failure"),
+            common_preventive_controls=self._common_optional_values(records, "preventive_control"),
+            common_business_impacts=self._common_optional_values(records, "business_impact"),
         )
 
     def get_root_causes(
@@ -141,6 +144,7 @@ class AnalyticsService:
         patterns.extend(self._frequent_rollback_patterns(db, environment, change_type))
         patterns.extend(self._high_downtime_patterns(db, environment, change_type))
         patterns.extend(self._repeated_error_patterns(change_types, root_causes))
+        patterns.extend(self._repeated_causal_chain_patterns(db, environment, change_type))
 
         deduped = {(pattern.pattern_type, pattern.title): pattern for pattern in patterns}
         return sorted(
@@ -316,6 +320,58 @@ class AnalyticsService:
 
         return patterns
 
+    def _repeated_causal_chain_patterns(
+        self,
+        db: Session,
+        environment: Environment | None,
+        change_type: ChangeType | None,
+    ) -> list[FailurePatternResponse]:
+        records = [
+            record
+            for record in self._load_records(db, environment=environment, change_type=change_type)
+            if self._is_failed(record) or record.incident_occurred
+        ]
+        grouped: dict[tuple[str, str, str], list[HistoricalChange]] = defaultdict(list)
+        for record in records:
+            if not record.process_failure or not record.technical_cause or not record.business_impact:
+                continue
+            grouped[
+                (
+                    record.process_failure,
+                    record.technical_cause,
+                    record.business_impact,
+                )
+            ].append(record)
+
+        patterns = []
+        for (process_failure, technical_cause, business_impact), items in grouped.items():
+            if len(items) < 2:
+                continue
+            preventive_controls = self._common_optional_values(items, "preventive_control")
+            patterns.append(
+                FailurePatternResponse(
+                    pattern_type="repeated_causal_chain",
+                    title=f"Repeated causal chain: {process_failure}",
+                    description=(
+                        f"{process_failure} led to '{technical_cause}' and business impact "
+                        f"'{business_impact}' in {len(items)} changes."
+                    ),
+                    count=len(items),
+                    rate=self._rate(len(items), len(records)),
+                    average_downtime=self._average([item.downtime_minutes for item in items]),
+                    severity_score=round(len(items) * 20 + self._average([item.downtime_minutes for item in items]) / 10, 2),
+                    affected_change_types=sorted({item.change_type for item in items}, key=self._enum_value),
+                    root_causes=self._common_root_causes(items),
+                    evidence=[item.title for item in items[:5]],
+                    process_failure=process_failure,
+                    technical_cause=technical_cause,
+                    business_impact=business_impact,
+                    preventive_control=preventive_controls[0] if preventive_controls else None,
+                )
+            )
+
+        return patterns
+
     def _load_records(
         self,
         db: Session,
@@ -345,6 +401,14 @@ class AnalyticsService:
             root_cause
             for root_cause, _ in sorted(root_cause_counts.items(), key=lambda entry: (-entry[1], entry[0]))
         ]
+
+    def _common_optional_values(self, records: list[HistoricalChange], field_name: str) -> list[str]:
+        values = Counter(
+            getattr(record, field_name)
+            for record in records
+            if (self._is_failed(record) or record.incident_occurred) and getattr(record, field_name)
+        )
+        return [value for value, _ in sorted(values.items(), key=lambda entry: (-entry[1], entry[0]))[:5]]
 
     def _is_successful(self, record: HistoricalChange) -> bool:
         return record.outcome == "successful"

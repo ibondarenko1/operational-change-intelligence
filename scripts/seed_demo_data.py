@@ -12,6 +12,7 @@ sys.path.insert(0, str(BACKEND_ROOT))
 from app.db.session import get_engine, get_session_factory  # noqa: E402
 from app.models.base import Base  # noqa: E402
 import app.models  # noqa: F401, E402
+from app.services.demo_assets import seed_demo_assets  # noqa: E402
 from app.services.historical_changes import DEFAULT_DEMO_DATA_PATH, seed_historical_changes  # noqa: E402
 
 
@@ -41,10 +42,18 @@ def main() -> None:
     session_factory = get_session_factory()
     with session_factory() as session:
         result = seed_historical_changes(session, args.data_file)
+        asset_result = seed_demo_assets(session)
 
     print(
         "Seeded historical changes: "
         f"inserted={result['inserted']} updated={result['updated']} total={result['total']}"
+    )
+    print(
+        "Seeded demo assets: "
+        f"inserted={asset_result['assets_inserted']} "
+        f"updated={asset_result['assets_updated']} "
+        f"total={asset_result['assets_total']} "
+        f"dependencies={asset_result['dependencies_total']}"
     )
 
 

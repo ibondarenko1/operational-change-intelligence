@@ -24,6 +24,9 @@ def test_analytics_summary(client, monkeypatch):
     assert payload["average_downtime_minutes"] == 49.38
     assert payload["most_common_root_cause"] == "insufficient_testing"
     assert payload["highest_risk_change_type"] == "legacy_authentication_block"
+    assert payload["common_process_failures"]
+    assert payload["common_preventive_controls"]
+    assert payload["common_business_impacts"]
 
 
 def test_root_cause_analytics(client, monkeypatch):
@@ -79,6 +82,7 @@ def test_failure_patterns_detect_repeated_and_high_risk_groups(client, monkeypat
     ) in pattern_keys
     assert any(item["pattern_type"] == "high_downtime_change_type" for item in payload)
     assert any(item["pattern_type"] == "frequent_rollback_change_type" for item in payload)
+    assert any(item["pattern_type"] == "repeated_causal_chain" for item in payload)
     assert len(payload) >= 5
 
 

@@ -83,7 +83,8 @@ export default function ChangeDetailsPage() {
     return <EmptyState title="Change not found" message="The requested change request does not exist." />;
   }
 
-  const incidents = similar.filter((item) => item.outcome === "failed" || item.incident_occurred);
+  const historicalEvidence = assessment?.similar_changes?.length ? assessment.similar_changes : similar;
+  const incidents = historicalEvidence.filter((item) => item.historical_failure_signal);
 
   return (
     <div className="stack">
@@ -136,7 +137,11 @@ export default function ChangeDetailsPage() {
             <RiskBadge level={assessment.level} />
             <strong>{formatLabel(assessment.recommendation)}</strong>
             <span className="muted">Confidence: {Math.round(assessment.confidence * 100)}%</span>
+            <span className="muted">
+              Raw score: {assessment.raw_score} / Capped score: {assessment.capped_score}
+            </span>
             <div className="formula">{assessment.formula}</div>
+            <p className="muted">{assessment.formula_explanation}</p>
           </div>
           <div>
             <h2>Risk Factors</h2>
@@ -150,6 +155,9 @@ export default function ChangeDetailsPage() {
                       <strong>{factor.title}</strong>
                       <span className="points">{factor.points > 0 ? `+${factor.points}` : factor.points}</span>
                     </header>
+                    <p>
+                      <strong>Category:</strong> {formatLabel(factor.category)} / cap {factor.category_cap}
+                    </p>
                     <p>{factor.description}</p>
                     <p>
                       <strong>Evidence:</strong> {factor.evidence ?? "No evidence recorded"}
@@ -166,6 +174,192 @@ export default function ChangeDetailsPage() {
           message="Run analysis to calculate risk score, factors, evidence, and checklist."
         />
       )}
+
+      {assessment ? (
+        <section className="section">
+          <div className="section-header">
+            <div>
+              <h2>Impact Summary</h2>
+              <p>Concrete blast radius derived from linked assets and dependencies.</p>
+            </div>
+          </div>
+          <div className="metrics-grid">
+            <div className="metric-card">
+              <span>Users</span>
+              <strong>{assessment.blast_radius.users_count ?? 0}</strong>
+            </div>
+            <div className="metric-card">
+              <span>Applications</span>
+              <strong>{assessment.blast_radius.applications_count ?? 0}</strong>
+            </div>
+            <div className="metric-card">
+              <span>Service accounts</span>
+              <strong>{assessment.blast_radius.service_accounts_count ?? 0}</strong>
+            </div>
+            <div className="metric-card">
+              <span>Business services</span>
+              <strong>{assessment.blast_radius.business_services_count ?? 0}</strong>
+            </div>
+            <div className="metric-card">
+              <span>Critical assets</span>
+              <strong>{assessment.blast_radius.critical_assets_count ?? 0}</strong>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {assessment ? (
+        <section className="section grid-2">
+          <div>
+            <h2>Affected Assets</h2>
+            {assessment.directly_affected_assets.length === 0 ? (
+              <EmptyState title="No direct assets" message="No assets are linked to this change request." />
+            ) : (
+              <ul className="list">
+                {assessment.directly_affected_assets.map((asset) => (
+                  <li className="list-item" key={`${asset.name}-${asset.relationship_type}`}>
+                    <header>
+                      <strong>{asset.name}</strong>
+                      <span className="badge risk-high">{formatLabel(asset.criticality)}</span>
+                    </header>
+                    <p>
+                      {formatLabel(asset.asset_type)} / auth: {asset.authentication_method ?? "none"}
+                    </p>
+                    <p>{asset.evidence}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <h2>Dependent Assets</h2>
+            {assessment.dependent_assets.length === 0 ? (
+              <EmptyState title="No dependencies" message="No downstream dependencies were discovered." />
+            ) : (
+              <ul className="list">
+                {assessment.dependent_assets.map((asset) => (
+                  <li className="list-item" key={asset.name}>
+                    <header>
+                      <strong>{asset.name}</strong>
+                      <span className="badge risk-medium">{formatLabel(asset.criticality)}</span>
+                    </header>
+                    <p>
+                      {formatLabel(asset.asset_type)} / business: {asset.business_service ?? "unknown"}
+                    </p>
+                    <p className="muted">{asset.description}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {assessment ? (
+        <section className="section">
+          <div className="section-header">
+            <div>
+              <h2>Dependency Paths</h2>
+              <p>Explainable chains from the change to assets and business services.</p>
+            </div>
+          </div>
+          {assessment.impact_paths.length === 0 ? (
+            <EmptyState title="No impact paths" message="No business service dependency path was found." />
+          ) : (
+            <ul className="list">
+              {assessment.impact_paths.map((path) => (
+                <li className="list-item" key={path.path.join("->")}>
+                  <header>
+                    <strong>{path.business_service}</strong>
+                    <span className="points">{path.path.length - 1} hops</span>
+                  </header>
+                  <p className="path-line">{path.path.join(" -> ")}</p>
+                  <p>
+                    <strong>Evidence:</strong> {path.evidence}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+
+      {assessment ? (
+        <section className="section">
+          <div className="section-header">
+            <div>
+              <h2>Predicted Failure Modes</h2>
+              <p>Rule-based operational failure predictions from affected assets and dependencies.</p>
+            </div>
+          </div>
+          {assessment.predicted_failure_modes.length === 0 ? (
+            <EmptyState title="No failure modes" message="No failure mode rules matched this change." />
+          ) : (
+            <ul className="list">
+              {assessment.predicted_failure_modes.map((mode) => (
+                <li className="list-item" key={`${mode.code}-${mode.affected_asset}`}>
+                  <header>
+                    <strong>{mode.failure_mode}</strong>
+                    <span className="badge risk-high">{formatLabel(mode.asset_type)}</span>
+                  </header>
+                  <p>
+                    <strong>Affected asset:</strong> {mode.affected_asset}
+                    {mode.business_service ? ` / ${mode.business_service}` : ""}
+                  </p>
+                  <p>
+                    <strong>Business impact:</strong> {mode.business_impact}
+                  </p>
+                  <p>
+                    <strong>Evidence:</strong> {mode.evidence}
+                  </p>
+                  <p>
+                    <strong>Recommended action:</strong> {mode.recommended_actions.join("; ")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+
+      {assessment ? (
+        <section className="section grid-2">
+          <div>
+            <h2>Risk Breakdown</h2>
+            {Object.entries(assessment.category_scores).length === 0 ? (
+              <EmptyState title="No category scores" message="No risk categories were triggered." />
+            ) : (
+              <ul className="list">
+                {Object.entries(assessment.category_scores).map(([category, values]) => (
+                  <li className="list-item" key={category}>
+                    <header>
+                      <strong>{formatLabel(category)}</strong>
+                      <span className="points">{values.capped}</span>
+                    </header>
+                    <p>
+                      Raw: {values.raw} / Capped: {values.capped} / Cap: {values.cap}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <h2>Missing Context</h2>
+            {assessment.missing_context.length === 0 ? (
+              <EmptyState title="No missing context" message="Required context is present for this analysis." />
+            ) : (
+              <ul className="list">
+                {assessment.missing_context.map((item) => (
+                  <li className="list-item" key={item}>
+                    <p>{item}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {assessment ? (
         <section className="section">
@@ -198,14 +392,14 @@ export default function ChangeDetailsPage() {
         <div className="section-header">
           <div>
             <h2>Similar Historical Changes</h2>
-            <p>Deterministic similarity score and matching factors.</p>
+            <p>Similarity is deterministic and independent from the historical outcome.</p>
           </div>
         </div>
-        {similar.length === 0 ? (
+        {historicalEvidence.length === 0 ? (
           <EmptyState title="No similar changes" message="Seed historical changes to compare this request." />
         ) : (
           <ul className="list">
-            {similar.map((item) => (
+            {historicalEvidence.map((item) => (
               <li className="list-item" key={item.historical_change_id}>
                 <header>
                   <strong>{item.title}</strong>
@@ -214,6 +408,13 @@ export default function ChangeDetailsPage() {
                 <OutcomeBadge outcome={item.outcome} incident={item.incident_occurred} />
                 <p>
                   <strong>Why similar:</strong> {item.matching_factors.join("; ")}
+                </p>
+                <p>
+                  <strong>Past outcome:</strong> {formatLabel(item.outcome)} / severity:{" "}
+                  {formatLabel(item.historical_severity)} / downtime: {item.downtime_minutes}m
+                </p>
+                <p>
+                  <strong>Root cause:</strong> {formatLabel(item.root_cause)}
                 </p>
                 <p>
                   <strong>Lessons:</strong> {item.lessons_learned ?? "No lesson recorded"}

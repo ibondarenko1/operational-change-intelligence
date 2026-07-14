@@ -471,6 +471,12 @@ textarea:focus {
   font-weight: 800;
 }
 
+.path-line {
+  color: #26333f;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  overflow-wrap: anywhere;
+}
+
 .filters {
   display: grid;
   grid-template-columns: repeat(5, minmax(140px, 1fr));

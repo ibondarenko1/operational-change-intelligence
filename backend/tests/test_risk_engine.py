@@ -71,6 +71,31 @@ def test_rollback_plan_missing_rule():
     factor = factor_by_code(result, "rollback_plan_missing")
     assert factor.points == 20
     assert "TBD" in factor.evidence
+    assert "weak_rollback_validation" not in {risk_factor.code for risk_factor in result.risk_factors}
+
+
+def test_short_rollback_plan_uses_weak_validation_not_missing_rule():
+    result = RiskEngine().analyze(make_change(rollback_plan="Disable the new policy."))
+    factor_codes = {risk_factor.code for risk_factor in result.risk_factors}
+
+    assert "rollback_plan_missing" not in factor_codes
+    assert "weak_rollback_validation" in factor_codes
+
+
+def test_full_tested_rollback_does_not_add_rollback_validation_risk():
+    result = RiskEngine().analyze(
+        make_change(
+            rollback_plan=(
+                "Disable the new policy, restore the previous assignment group, validate contractor "
+                "and admin sign-ins, monitor failures for thirty minutes, and attach tested rollback evidence."
+            )
+        )
+    )
+    factor_codes = {risk_factor.code for risk_factor in result.risk_factors}
+
+    assert "rollback_plan_missing" not in factor_codes
+    assert "weak_rollback_validation" not in factor_codes
+    assert "tested_rollback" in factor_codes
 
 
 def test_broad_scope_rule():
@@ -166,9 +191,28 @@ def test_risk_level_recommendation_and_formula_are_explicit():
     )
 
     assert result.score == 100
+    assert result.raw_score > result.score
+    assert result.capped_score >= result.score
     assert result.level == "critical"
     assert result.recommendation == "delay_and_investigate"
     assert result.formula == FORMULA
+
+
+def test_category_caps_keep_identity_scope_from_double_counting():
+    result = RiskEngine().analyze(
+        make_change(
+            title="Global admin and break-glass MFA rollout for all users",
+            description="Policy affects privileged administrator and emergency access accounts.",
+            affected_scope="All users, Global administrators, break-glass emergency access accounts.",
+        )
+    )
+
+    identity_scope = result.category_scores["identity_scope"]
+    assert identity_scope["raw"] > identity_scope["cap"]
+    assert identity_scope["capped"] == 30
+    assert {"privileged_accounts_affected", "break_glass_accounts_affected", "broad_scope"}.issubset(
+        {factor.code for factor in result.risk_factors}
+    )
 
 
 def test_demo_asset_context_detects_mvp_scenario_risks():

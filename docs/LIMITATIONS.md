@@ -14,20 +14,25 @@ This MVP is intentionally deterministic and scoped.
 - LLM reasoning
 - Embeddings
 - Neo4j or graph analysis
+- Automatic remediation
+- Automatic approval
 - Advanced charts
 
 ## Known Modeling Limits
 
-- Demo assets are loaded from JSON, not persisted as first-class database entities.
+- Demo assets are first-class database records, but they are synthetic and not imported from a real CMDB or Microsoft Graph.
+- Dependency traversal is deterministic and shallow; it is not a full production graph simulator.
 - Similarity is keyword and metadata based, not semantic.
-- Root-cause analytics depends on historical records being accurately tagged.
+- Historical outcome data is curated demo data, not calibrated production incident history.
+- Root-cause and causal-chain analytics depend on historical records being accurately tagged.
 - Risk scoring is rule-based and should be calibrated with production incident data before operational use.
 - Checklist items are generated from triggered rules and are not workflow tasks yet.
-- Rollback validation is inferred from text, not verified against actual change evidence.
+- Rollback validation is inferred from text, not verified against attached evidence.
+- The impact analysis explains plausible operational failure paths; it does not prove that a failure will occur.
 
 ## Intended Next Steps
 
-- Add real asset inventory model.
+- Add real asset inventory ingestion.
 - Add Microsoft Graph connectors.
 - Add Entra Conditional Access policy parser.
 - Add Intune and Defender policy ingestion.

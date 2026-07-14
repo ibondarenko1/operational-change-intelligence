@@ -117,6 +117,44 @@ def test_similar_failed_change_scores_above_irrelevant_successful_change():
     assert failed_score >= 0.8
 
 
+def test_similarity_sorting_is_independent_from_historical_outcome():
+    change = make_change(
+        description="Require MFA for contractor accounts using Microsoft 365 and legacy VPN access.",
+        affected_scope="All contractor accounts, service accounts, VPN, and legacy applications",
+    )
+    highly_similar_success = make_historical(
+        title="Enable MFA for all contractors",
+        description=(
+            "Required MFA for all contractor accounts, service accounts, VPN access, and legacy applications "
+            "after a pilot and report-only phase."
+        ),
+        outcome="successful",
+        incident_occurred=False,
+        downtime_minutes=0,
+        rollback_required=False,
+        root_cause=None,
+    )
+    less_similar_failure = make_historical(
+        title="Device compliance incident for sales laptops",
+        description="A failed Intune compliance policy blocked unmanaged sales devices.",
+        environment=Environment.azure,
+        change_type=ChangeType.device_compliance,
+        outcome="failed",
+        incident_occurred=True,
+        downtime_minutes=180,
+        rollback_required=True,
+        root_cause="insufficient_testing",
+    )
+
+    results = SimilarityService().find_similar(change, [less_similar_failure, highly_similar_success], limit=2)
+
+    assert results[0].historical_change_id == highly_similar_success.id
+    assert results[0].similarity_score > results[1].similarity_score
+    assert results[0].outcome == "successful"
+    assert results[1].historical_failure_signal is True
+    assert not any("incident" in factor for factor in results[1].matching_factors)
+
+
 def test_similarity_increases_risk_assessment_score():
     change = make_change()
     relevant_failed = make_historical(id=CONTRACTORS_FAILURE_ID)

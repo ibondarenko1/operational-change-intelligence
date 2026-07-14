@@ -15,16 +15,40 @@ Each rule includes:
 - `code`
 - `title`
 - `description`
+- `category`
 - `points`
+- `category_cap`
 - `conditions`
 - `evidence_template`
 - `checklist_items`
 
 ## Formula
 
+The engine evaluates every matching rule, saves every triggered `RiskFactor`, then caps the score by category.
+
 ```text
-score = min(100, max(0, sum(risk_factors.points)))
+score = min(100, max(0, sum(min(sum(points by category), category_cap))))
 ```
+
+The response includes:
+
+- `raw_score`: uncapped sum of all factor points.
+- `category_scores`: raw, capped, and cap per category.
+- `capped_score`: sum of capped category scores before final 0-100 clamp.
+- `formula_explanation`: readable category breakdown.
+
+Category caps:
+
+| Category | Cap |
+| --- | ---: |
+| `identity_scope` | 30 |
+| `dependency` | 30 |
+| `deployment_strategy` | 25 |
+| `rollback` | 20 |
+| `historical_evidence` | 20 |
+| `timing` | 10 |
+
+This prevents double-counting related signals, such as privileged accounts and break-glass accounts both inflating identity risk without limit.
 
 Risk levels:
 
@@ -40,47 +64,43 @@ Risk levels:
 Risk analysis uses:
 
 - current `ChangeRequest`
+- linked `Asset` records and dependency context
 - all `HistoricalChange` records
-- matching demo asset context, when available
-- YAML rule definitions
+- similarity results
+- YAML risk rules
+- impact analysis result
 
-## Current Rule Families
+## Similarity Boundary
 
-- privileged accounts affected
-- service accounts affected
-- break-glass accounts affected
-- rollback missing
-- broad scope
-- legacy applications present
-- outside maintenance window
-- pilot missing or enabled
-- report-only missing or enabled
-- weak rollback validation
-- similar historical failures found
-- tested rollback
+`SimilarityService` scores only similarity between changes:
 
-## Similar Failures
-
-`similar_failures_found` uses `SimilarityService`, which scores historical records from 0 to 1 using:
-
-- environment match
-- change type match
+- environment
+- change type
 - title keyword overlap
 - description keyword overlap
 - affected scope keyword overlap
-- historical incident
-- root cause
-- rollback requirement
+- affected object types
+- authentication methods
+- policy type
 
-Risk points depend on both the number of failed similar changes and their similarity scores, with a configured maximum.
+Historical outcome is not part of `similarity_score`. Outcome, incident, root cause, downtime, rollback, `historical_failure_signal`, and `historical_severity` are returned separately as historical outcome context.
 
-## Explainability
+The risk engine first receives similar changes, then `similar_failures_found` adds risk only for similar records with a failure signal.
 
-Each triggered rule creates a `RiskFactor` with:
+## Rollback Logic
 
-- point value
-- natural-language title
-- description
-- evidence string
+`rollback_plan_missing` and `weak_rollback_validation` are mutually exclusive:
 
-Each triggered rule can also create checklist items.
+- missing or marker-only rollback plan triggers `rollback_plan_missing`;
+- existing but weak rollback plan triggers `weak_rollback_validation`;
+- tested and validated rollback can trigger `tested_rollback`, which reduces rollback category risk.
+
+## Failure Mode Rules
+
+Failure mode rules live in:
+
+```text
+backend/app/rules/failure_mode_rules.yaml
+```
+
+They are evaluated by `ImpactAnalysisService`, not by an LLM. They inspect change type, asset type, legacy status, authentication method, and dependency relationships to produce predicted failure modes and recommended actions.
