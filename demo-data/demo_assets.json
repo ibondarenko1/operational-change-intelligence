@@ -1,0 +1,50 @@
+[
+  {
+    "scenario_code": "mfa_contractors_legacy_auth",
+    "title": "Enable MFA for all contractors",
+    "environment": "entra_id",
+    "change_type": "mfa_rollout",
+    "assets": [
+      {
+        "asset_type": "contractor_accounts",
+        "count": 127,
+        "description": "127 external contractor accounts in scope across Microsoft 365, VPN access, and vendor support workflows."
+      },
+      {
+        "asset_type": "legacy_applications",
+        "count": 4,
+        "description": "4 legacy business applications still use basic authentication, EWS, SMTP AUTH, or old client libraries.",
+        "examples": [
+          "Vendor Billing EWS Export",
+          "Facilities Badge Provisioning",
+          "Warehouse TimeClock Legacy Portal",
+          "Contractor Document Intake"
+        ]
+      },
+      {
+        "asset_type": "service_accounts",
+        "count": 3,
+        "description": "3 service accounts and automation identities are used by contractor onboarding and badge provisioning.",
+        "examples": [
+          "svc-contractor-sync",
+          "svc-vendor-billing",
+          "svc-badge-provisioning"
+        ]
+      },
+      {
+        "asset_type": "break_glass_accounts",
+        "count": 2,
+        "description": "2 break-glass emergency access accounts must remain excluded from MFA enforcement and validated after deployment.",
+        "examples": [
+          "breakglass-cloud-01",
+          "breakglass-cloud-02"
+        ]
+      },
+      {
+        "asset_type": "legacy_vpn_integration",
+        "count": 1,
+        "description": "1 legacy VPN integration depends on RADIUS authentication and contractor account sign-in behavior."
+      }
+    ]
+  }
+]

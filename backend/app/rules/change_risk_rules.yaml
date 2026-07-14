@@ -1,0 +1,302 @@
+rules:
+  - code: privileged_accounts_affected
+    title: Privileged accounts affected
+    description: The change mentions privileged or administrative identities.
+    points: 25
+    conditions:
+      type: keyword_any
+      fields: ["title", "description", "affected_scope", "asset_context"]
+      keywords:
+        - privileged
+        - admin
+        - administrator
+        - global administrator
+        - privileged role
+        - pim
+        - emergency access
+        - break-glass
+        - break glass
+    evidence_template: "Matched privileged identity indicators: {matches}."
+    checklist_items:
+      - code: verify_privileged_access_recovery
+        title: Verify privileged access recovery
+        description: Confirm at least two administrators can recover access after the change.
+        priority: high
+        status: open
+      - code: validate_break_glass_exclusions
+        title: Validate break-glass exclusions
+        description: Confirm emergency access accounts are excluded or covered by a documented recovery path.
+        priority: high
+        status: open
+
+  - code: service_accounts_affected
+    title: Service accounts affected
+    description: The change may affect service accounts, automation identities, or workload integrations.
+    points: 20
+    conditions:
+      type: keyword_any
+      fields: ["title", "description", "affected_scope", "asset_context"]
+      keywords:
+        - service account
+        - service accounts
+        - automation
+        - workload identity
+        - managed identity
+        - app registration
+        - daemon
+        - integration account
+        - connector
+    evidence_template: "Matched service account or automation indicators: {matches}."
+    checklist_items:
+      - code: inventory_service_identities
+        title: Inventory service identities
+        description: Validate service accounts, workload identities, app registrations, and automation jobs in scope.
+        priority: high
+        status: open
+
+  - code: break_glass_accounts_affected
+    title: Break-glass accounts affected
+    description: Emergency access or break-glass accounts appear to be in or near the deployment scope.
+    points: 25
+    conditions:
+      type: keyword_any
+      fields: ["title", "description", "affected_scope", "asset_context"]
+      keywords:
+        - break-glass
+        - break glass
+        - emergency access
+    evidence_template: "Matched break-glass or emergency access indicators: {matches}."
+    checklist_items:
+      - code: exclude_break_glass_accounts
+        title: Exclude break-glass accounts
+        description: Confirm emergency access accounts are excluded from enforcement and documented.
+        priority: high
+        status: open
+      - code: validate_emergency_access_after_change
+        title: Validate emergency access after change
+        description: Test emergency access sign-in after policy deployment and before closing the change.
+        priority: high
+        status: open
+
+  - code: rollback_plan_missing
+    title: Rollback plan missing
+    description: The rollback plan is missing, too short, or explicitly marked as unavailable.
+    points: 20
+    conditions:
+      type: rollback_missing
+      field: rollback_plan
+      minimum_length: 30
+      empty_markers: ["none", "n/a", "na", "tbd", "not defined", "no rollback"]
+    evidence_template: "Rollback plan is missing or not actionable: {rollback_plan_summary}."
+    checklist_items:
+      - code: create_actionable_rollback
+        title: Create actionable rollback
+        description: Document owner, exact rollback steps, validation checks, and expected recovery time.
+        priority: high
+        status: open
+
+  - code: broad_scope
+    title: Broad scope
+    description: The change appears to target a broad population such as all users, all devices, or the whole tenant.
+    points: 15
+    conditions:
+      type: keyword_any
+      fields: ["title", "description", "affected_scope", "asset_context"]
+      keywords:
+        - all users
+        - all contractor accounts
+        - all contractors
+        - contractor accounts
+        - all employees
+        - entire tenant
+        - tenant-wide
+        - global
+        - all devices
+        - all mailboxes
+        - company-wide
+        - production tenant
+    evidence_template: "Matched broad-scope indicators: {matches}."
+    checklist_items:
+      - code: confirm_scope_boundaries
+        title: Confirm scope boundaries
+        description: Verify included users, excluded users, pilot groups, and emergency exceptions.
+        priority: medium
+        status: open
+
+  - code: legacy_applications_present
+    title: Legacy applications present
+    description: The change mentions legacy applications or legacy authentication dependencies.
+    points: 15
+    conditions:
+      type: keyword_any
+      fields: ["title", "description", "affected_scope", "asset_context"]
+      keywords:
+        - legacy
+        - legacy application
+        - legacy applications
+        - legacy business applications
+        - legacy vpn
+        - radius
+        - basic auth
+        - imap
+        - pop
+        - smtp auth
+        - ews
+        - active sync
+        - activesync
+        - old client
+    evidence_template: "Matched legacy dependency indicators: {matches}."
+    checklist_items:
+      - code: validate_legacy_dependencies
+        title: Validate legacy dependencies
+        description: Map legacy protocol usage to application owners and approved exceptions.
+        priority: high
+        status: open
+
+  - code: outside_maintenance_window
+    title: Outside maintenance window
+    description: The change is not marked for execution inside a maintenance window.
+    points: 10
+    conditions:
+      type: bool_equals
+      field: maintenance_window
+      value: false
+    evidence_template: "maintenance_window is {maintenance_window}."
+    checklist_items:
+      - code: confirm_business_timing
+        title: Confirm business timing
+        description: Confirm business owner acceptance for implementation outside an approved maintenance window.
+        priority: medium
+        status: open
+
+  - code: pilot_missing
+    title: Pilot missing
+    description: The change is not staged through a pilot before enforcement.
+    points: 15
+    conditions:
+      type: bool_equals
+      field: pilot_enabled
+      value: false
+    evidence_template: "pilot_enabled is {pilot_enabled}; no pilot stage is configured."
+    checklist_items:
+      - code: define_pilot_group
+        title: Define pilot group
+        description: Select a representative pilot group before broad enforcement.
+        priority: high
+        status: open
+      - code: define_pilot_exit_criteria
+        title: Define pilot exit criteria
+        description: Document success criteria, failure thresholds, and rollback triggers for the pilot.
+        priority: high
+        status: open
+
+  - code: report_only_missing
+    title: Report-only phase missing
+    description: The change moves directly to enforcement without a report-only observation phase.
+    points: 10
+    conditions:
+      type: bool_equals
+      field: report_only_mode
+      value: false
+    evidence_template: "report_only_mode is {report_only_mode}; impact telemetry will not be collected before enforcement."
+    checklist_items:
+      - code: run_report_only_phase
+        title: Run report-only phase
+        description: Collect sign-in and policy impact telemetry before enforcement.
+        priority: high
+        status: open
+
+  - code: weak_rollback_validation
+    title: Weak rollback validation
+    description: The rollback plan does not describe validation steps or tested recovery criteria.
+    points: 15
+    conditions:
+      type: rollback_weak_validation
+      field: rollback_plan
+      minimum_length: 70
+      validation_keywords:
+        - validate
+        - validation
+        - verified
+        - tested
+        - test
+        - confirm
+        - monitor
+    evidence_template: "Rollback plan lacks validation detail. Plan: {rollback_plan_summary}. Validation keywords matched: {validation_matches}."
+    checklist_items:
+      - code: add_rollback_validation_steps
+        title: Add rollback validation steps
+        description: Add exact validation checks, owners, expected recovery time, and acceptance criteria.
+        priority: high
+        status: open
+
+  - code: similar_failures_found
+    title: Similar historical failures found
+    description: Deterministically similar historical changes have failed or caused incidents.
+    points: 20
+    conditions:
+      type: similar_failures
+      minimum_similarity: 0.35
+      per_failure_points: 10
+      max_points: 20
+    evidence_template: "{failure_count} similar failed historical changes found using deterministic similarity. Added {points} points from scores: {examples}."
+    checklist_items:
+      - code: review_similar_failures
+        title: Review similar failures
+        description: Review root causes and lessons learned from similar historical failed changes.
+        priority: high
+        status: open
+
+  - code: pilot_enabled
+    title: Pilot enabled
+    description: A pilot is enabled, reducing rollout risk.
+    points: -15
+    conditions:
+      type: bool_equals
+      field: pilot_enabled
+      value: true
+    evidence_template: "pilot_enabled is {pilot_enabled}."
+    checklist_items:
+      - code: define_pilot_success_criteria
+        title: Define pilot success criteria
+        description: Confirm the pilot has measurable success criteria and rollback triggers.
+        priority: medium
+        status: open
+
+  - code: report_only_mode
+    title: Report-only mode enabled
+    description: Report-only mode is enabled, reducing enforcement risk.
+    points: -10
+    conditions:
+      type: bool_equals
+      field: report_only_mode
+      value: true
+    evidence_template: "report_only_mode is {report_only_mode}."
+    checklist_items:
+      - code: review_report_only_telemetry
+        title: Review report-only telemetry
+        description: Review report-only impact before moving to enforcement.
+        priority: medium
+        status: open
+
+  - code: tested_rollback
+    title: Rollback tested
+    description: The rollback plan appears to have been tested or validated.
+    points: -10
+    conditions:
+      type: keyword_any
+      fields: ["rollback_plan"]
+      keywords:
+        - tested rollback
+        - rollback tested
+        - validated rollback
+        - rehearsed
+        - verified rollback
+        - tested in staging
+    evidence_template: "Matched tested rollback indicators: {matches}."
+    checklist_items:
+      - code: attach_rollback_test_evidence
+        title: Attach rollback test evidence
+        description: Attach or link the rollback test result to the change record.
+        priority: low
+        status: open
