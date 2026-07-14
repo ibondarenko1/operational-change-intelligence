@@ -27,14 +27,14 @@ Each rule includes:
 The engine evaluates every matching rule, saves every triggered `RiskFactor`, then caps the score by category.
 
 ```text
-score = min(100, max(0, sum(min(sum(points by category), category_cap))))
+score = min(100, sum(min(category_cap, max(0, sum(points by category)))))
 ```
 
 The response includes:
 
 - `raw_score`: uncapped sum of all factor points.
 - `category_scores`: raw, capped, and cap per category.
-- `capped_score`: sum of capped category scores before final 0-100 clamp.
+- `capped_score`: sum of non-negative capped category scores before final 0-100 clamp.
 - `formula_explanation`: readable category breakdown.
 
 Category caps:
@@ -49,6 +49,7 @@ Category caps:
 | `timing` | 10 |
 
 This prevents double-counting related signals, such as privileged accounts and break-glass accounts both inflating identity risk without limit.
+It also prevents a net-negative category, such as deployment strategy after pilot and report-only controls, from reducing unrelated identity, dependency, rollback, historical, or timing risk.
 
 Risk levels:
 
