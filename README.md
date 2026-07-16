@@ -1,4 +1,4 @@
-# Operational Change Intelligence
+.# Operational Change Intelligence
 
 Operational Change Intelligence is an explainable impact analysis MVP for planned changes in a Microsoft security environment. It identifies concrete affected assets, dependency paths, likely failure modes, related business services, similar historical evidence, and risk-reducing actions before implementation.
 
