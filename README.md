@@ -86,6 +86,8 @@ On startup, the backend container runs:
 PowerShell SQLite demo setup:
 
 ```powershell
+# Keep the migration, seed script, and API in this directory. The relative
+# SQLite URL is resolved from the current working directory.
 cd backend
 $env:DATABASE_URL = "sqlite+pysqlite:///./local_dev.db"
 $env:APP_CHECK_DB_ON_STARTUP = "false"
@@ -93,9 +95,7 @@ $env:DEMO_MODE = "true"
 $env:CORS_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000"
 python -m pip install -r requirements.txt
 python -m alembic upgrade head
-cd ..
-python scripts\seed_demo_data.py
-cd backend
+python ..\scripts\seed_demo_data.py
 python -m uvicorn app.main:app --reload
 ```
 

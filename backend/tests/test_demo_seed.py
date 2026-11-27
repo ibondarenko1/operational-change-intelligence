@@ -1,12 +1,25 @@
 import os
+import re
+import shutil
 import subprocess
 import sys
+from pathlib import Path
 
+from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_engine
 from app.models.change import Asset, AssetDependency
+
+
+def _ignore_quickstart_files(_directory: str, names: list[str]) -> set[str]:
+    ignored = {".venv", "venv", "env", "__pycache__", ".pytest_cache", ".ruff_cache"}
+    return {
+        name
+        for name in names
+        if name in ignored or Path(name).suffix in {".db", ".pyc"}
+    }
 
 
 def test_demo_seed_endpoint_requires_demo_mode(client, monkeypatch):
@@ -109,3 +122,81 @@ def test_seed_script_is_idempotent(tmp_path):
         text=True,
     )
     assert "inserted=0 updated=40 total=40" in second.stdout
+
+
+def test_documented_sqlite_quickstart_uses_one_working_directory(tmp_path, monkeypatch):
+    repo_root = Path(__file__).resolve().parents[2]
+    quickstart_root = tmp_path / "quickstart"
+    copy_options = {"ignore": _ignore_quickstart_files}
+    shutil.copytree(repo_root / "backend", quickstart_root / "backend", **copy_options)
+    shutil.copytree(repo_root / "scripts", quickstart_root / "scripts", **copy_options)
+    shutil.copytree(repo_root / "demo-data", quickstart_root / "demo-data", **copy_options)
+
+    readme = (repo_root / "README.md").read_text(encoding="utf-8")
+    local_backend_section = readme.split("## Local Backend", maxsplit=1)[1].split(
+        "## Local Frontend", maxsplit=1
+    )[0]
+    command_block = re.search(r"```powershell\n(?P<commands>.*?)```", local_backend_section, re.DOTALL)
+    assert command_block is not None
+
+    env = dict(os.environ)
+    working_directory = quickstart_root
+    seed = None
+    for raw_line in command_block.group("commands").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        change_directory = re.fullmatch(r"cd\s+(.+)", line)
+        if change_directory:
+            working_directory = (working_directory / change_directory.group(1)).resolve()
+            continue
+        environment_assignment = re.fullmatch(r'\$env:(\w+)\s*=\s*"(.*)"', line)
+        if environment_assignment:
+            env[environment_assignment.group(1)] = environment_assignment.group(2)
+            continue
+        if line.startswith("python -m pip install"):
+            continue
+        if line.startswith("python -m alembic "):
+            command = [sys.executable, "-m", "alembic", *line.split()[3:]]
+        elif line.startswith("python ") and "uvicorn" not in line:
+            script = line.removeprefix("python ").replace("\\", "/")
+            command = [sys.executable, *script.split()]
+        elif line.startswith("python -m uvicorn "):
+            break
+        else:
+            raise AssertionError(f"Unsupported quickstart command: {line}")
+        completed = subprocess.run(
+            command,
+            cwd=working_directory,
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        if "seed_demo_data.py" in line:
+            seed = completed
+
+    assert seed is not None
+
+    assert "inserted=40 updated=0 total=40" in seed.stdout
+    backend_root = quickstart_root / "backend"
+    assert (backend_root / "local_dev.db").exists()
+    assert not (quickstart_root / "local_dev.db").exists()
+
+    monkeypatch.chdir(working_directory)
+    monkeypatch.setenv("DATABASE_URL", env["DATABASE_URL"])
+    monkeypatch.setenv("APP_CHECK_DB_ON_STARTUP", "false")
+    from app.core.config import get_settings
+    from app.db.session import get_engine
+    from app.main import create_app
+
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+    try:
+        with TestClient(create_app()) as api_client:
+            response = api_client.get("/api/v1/historical-changes?outcome=failed")
+        assert response.status_code == 200
+        assert len(response.json()) == 17
+    finally:
+        get_engine.cache_clear()
+        get_settings.cache_clear()
